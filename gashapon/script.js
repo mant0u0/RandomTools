@@ -151,7 +151,9 @@ function spawnBalls(material) {
   balls = [];
   const radius = 2.2;
   const geometry = new THREE.SphereGeometry(radius, 32, 32);
-  const outlineGeo = new THREE.SphereGeometry(radius * 1.07, 32, 32);
+  // 判斷是否為直向螢幕(手機/視野拉遠)，如果是則用 1.10 (加粗)，否則用 1.07
+  const outlineScale = window.innerWidth < window.innerHeight ? 1.1 : 1.07;
+  const outlineGeo = new THREE.SphereGeometry(radius * outlineScale, 32, 32);
   const outlineMat = new THREE.MeshBasicMaterial({
     color: styles.outlineColor,
     side: THREE.BackSide,
@@ -212,7 +214,8 @@ function spawnBalls(material) {
 function spawnSingleBall(item, material) {
   const radius = 2.2;
   const geometry = new THREE.SphereGeometry(radius, 32, 32);
-  const outlineGeo = new THREE.SphereGeometry(radius * 1.07, 32, 32);
+  const outlineScale = window.innerWidth < window.innerHeight ? 1.1 : 1.07;
+  const outlineGeo = new THREE.SphereGeometry(radius * outlineScale, 32, 32);
   const outlineMat = new THREE.MeshBasicMaterial({
     color: styles.outlineColor,
     side: THREE.BackSide,
