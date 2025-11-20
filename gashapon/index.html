@@ -41,60 +41,66 @@
 
       <!-- 空狀態提示 -->
       <div id="empty-message">
-        <h2>NO ITEMS LEFT</h2>
-        <p>Edit to add more!</p>
+        <h2>扭蛋機已經空了</h2>
+        <p>點擊編輯按鈕來新增獎項</p>
+      </div>
+
+      <div class="top-left-controls">
+        <a class="back-btn" href="../index.html" title="返回">返回</a>
       </div>
 
       <!-- 左下角 RESET -->
       <div class="bottom-left-controls">
-        <button class="circle-btn restart" id="btn-main-restart">RESET</button>
+        <button class="circle-btn restart" id="btn-main-restart">重來</button>
       </div>
 
       <!-- 右下角 按鈕區 -->
       <div class="bottom-right-controls">
-        <button class="circle-btn" id="btn-open-edit">EDIT</button>
-        <button class="circle-btn mix" id="btn-shuffle">MIX</button>
-        <button class="circle-btn pick" id="btn-random-pick">PICK</button>
+        <button class="circle-btn" id="btn-open-edit">編輯</button>
+        <button class="circle-btn mix" id="btn-shuffle">搖動</button>
+        <button class="circle-btn pick" id="btn-random-pick">抽獎</button>
       </div>
 
       <!-- 編輯視窗 -->
       <div class="modal-overlay" id="edit-modal">
         <div class="modal-content large">
           <div class="tabs-header">
-            <button class="tab-btn active" data-tab="status">STATUS</button>
-            <button class="tab-btn" data-tab="input">INPUT</button>
+            <button class="tab-btn active" data-tab="status">扭蛋獎項</button>
+            <button class="tab-btn" data-tab="input">編輯獎項</button>
           </div>
 
           <div class="tabs-body">
             <!-- Status Tab -->
             <div class="tab-pane active" id="tab-status">
-              <div class="input-hint">Click items to restore them.</div>
+              <div class="input-hint">點選項目可以移除獎項或恢復獎項</div>
               <ul class="item-list" id="status-list"></ul>
             </div>
 
             <!-- Input Tab -->
             <div class="tab-pane" id="tab-input">
-              <div class="input-hint">"Item Name" or "Item Name * Count"</div>
+              <div class="input-hint">
+                輸入「獎項名稱」或是「獎項名稱 * 數量」
+              </div>
               <textarea id="input-textarea" spellcheck="false">
-Pizza * 2
-Burger * 2
-Sushi
-Tacos
-Donut</textarea
+饅頭 * 2
+肉包 * 2
+菜包
+豆漿
+蛋餅 * 3</textarea
               >
               <label class="checkbox-wrapper">
                 <input type="checkbox" id="check-remove" checked />
-                Remove item after drawing?
+                抽出的獎項將從扭蛋機中移除
               </label>
             </div>
           </div>
 
           <div class="modal-footer">
             <button class="action-btn btn-close" id="btn-modal-close">
-              CLOSE
+              關閉
             </button>
             <button class="action-btn btn-restart" id="btn-modal-restart">
-              RESTART
+              更新
             </button>
           </div>
         </div>
@@ -103,11 +109,13 @@ Donut</textarea
       <!-- Reset 確認視窗 -->
       <div class="modal-overlay" id="reset-modal">
         <div class="modal-content small">
-          <h3>RESET GAME?</h3>
+          <h3>想要重來嗎？</h3>
           <div class="modal-footer" style="border: none; padding: 0">
-            <button class="action-btn btn-no" id="btn-reset-cancel">NO</button>
+            <button class="action-btn btn-no" id="btn-reset-cancel">
+              取消
+            </button>
             <button class="action-btn btn-yes" id="btn-reset-confirm">
-              YES
+              重來
             </button>
           </div>
         </div>
@@ -117,7 +125,7 @@ Donut</textarea
       <div id="result-overlay">
         <div class="sphere-display" id="result-icon"></div>
         <div id="result-text">RESULT</div>
-        <button class="close-result-btn" id="btn-close-result">COOL!</button>
+        <button class="close-result-btn" id="btn-close-result">好耶</button>
       </div>
     </body>
     <script type="module" src="./script.js"></script>

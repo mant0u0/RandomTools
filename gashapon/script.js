@@ -9,7 +9,6 @@ let gameItems = [];
 let isMouseDown = false;
 let clickStartTime = 0;
 let currentDrawnBall = null;
-const FRUSTUM_SIZE = 22;
 const palette = [
   "#EAA14D",
   "#F2C94C",
@@ -45,17 +44,26 @@ const resultText = document.getElementById("result-text");
 const resultIcon = document.getElementById("result-icon");
 const btnCloseResult = document.getElementById("btn-close-result");
 const emptyMessage = document.getElementById("empty-message");
+
+function getFrustumSize() {
+  const aspect = window.innerWidth / window.innerHeight;
+  // 如果寬小於高 (手機直向)，數值改大一點 (例如 35 或 40) 來拉遠
+  // 如果是電腦 (橫向)，維持原本的 22
+  return aspect < 1.0 ? 35 : 22;
+}
+
 init();
 animate();
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#F6F3EB");
   const aspect = window.innerWidth / window.innerHeight;
+  const frustumSize = getFrustumSize(); // 取得動態大小
   camera = new THREE.OrthographicCamera(
-    (FRUSTUM_SIZE * aspect) / -2,
-    (FRUSTUM_SIZE * aspect) / 2,
-    FRUSTUM_SIZE / 2,
-    FRUSTUM_SIZE / -2,
+    (frustumSize * aspect) / -2,
+    (frustumSize * aspect) / 2,
+    frustumSize / 2,
+    frustumSize / -2,
     1,
     1000
   );
@@ -277,13 +285,30 @@ function updateStatusList(material) {
     }
     li.addEventListener("click", () => {
       if (item.drawn) {
+        // 情況 A: 已經被劃掉 -> 復原 (這是原本就有的邏輯)
         item.drawn = false;
         const exists = balls.find((b) => b.itemData === item);
         if (!exists && material) {
           spawnSingleBall(item, material);
         }
-        updateStatusList(material);
+      } else {
+        // 情況 B: 還沒被劃掉 -> 手動標記為已抽過並移除球 (這是新增的邏輯)
+        item.drawn = true;
+
+        // 找到場景中對應的那顆球
+        const ballIndex = balls.findIndex((b) => b.itemData === item);
+        if (ballIndex !== -1) {
+          const ballObj = balls[ballIndex];
+          // 移除 3D 物體和物理剛體
+          removeVisualsAndBody(ballObj);
+          // 從陣列中刪除
+          balls.splice(ballIndex, 1);
+          // 檢查是否沒球了
+          checkEmptyState();
+        }
       }
+      // 最後更新列表顯示狀態
+      updateStatusList(material);
     });
     statusList.appendChild(li);
   });
@@ -542,10 +567,13 @@ function animate() {
 }
 function onWindowResize() {
   const aspect = window.innerWidth / window.innerHeight;
-  camera.left = (-FRUSTUM_SIZE * aspect) / 2;
-  camera.right = (FRUSTUM_SIZE * aspect) / 2;
-  camera.top = FRUSTUM_SIZE / 2;
-  camera.bottom = -FRUSTUM_SIZE / 2;
+  const frustumSize = getFrustumSize(); // 重新取得動態大小
+
+  camera.left = (-frustumSize * aspect) / 2;
+  camera.right = (frustumSize * aspect) / 2;
+  camera.top = frustumSize / 2;
+  camera.bottom = -frustumSize / 2;
+
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }

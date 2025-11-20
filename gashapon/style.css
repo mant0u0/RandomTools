@@ -2,7 +2,7 @@
 
 * {
   box-sizing: border-box;
-  font-family: "Bungee", "Chiron GoRound TC", sans-serif !important;
+  font-family: "Chiron GoRound TC", sans-serif !important;
   font-weight: 900;
 }
 
@@ -21,7 +21,7 @@ body {
   text-align: center;
   color: #725349;
   opacity: 0.5;
-  font-size: 14px;
+  font-size: 16px;
   letter-spacing: 1px;
   pointer-events: none;
 }
@@ -53,33 +53,59 @@ body {
   margin-top: 10px;
 }
 
+/* 左上角控制區 */
+.top-left-controls {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  pointer-events: auto;
+  z-index: 100;
+  .back-btn {
+    display: block;
+    width: 100%;
+    padding: 12px 16px;
+    text-align: center;
+    background: #e6e1d6;
+    border: 5px solid #725349;
+    border-radius: 10px;
+    color: #725349;
+    font-size: 16px;
+    text-decoration: none;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+    transition: transform 0.1s, box-shadow 0.1s;
+    &::before {
+      content: "← ";
+    }
+  }
+}
+
 /* 左下角控制區 (RESET) */
 .bottom-left-controls {
   position: absolute;
-  bottom: 30px;
-  left: 30px;
+  bottom: 20px;
+  left: 20px;
   pointer-events: auto;
 }
 
 /* 右下角控制區 */
 .bottom-right-controls {
   position: absolute;
-  bottom: 30px;
-  right: 30px;
+  bottom: 20px;
+  right: 20px;
   display: flex;
-  gap: 12px;
+  gap: 8px;
   pointer-events: auto;
   align-items: flex-end;
 }
 
 .circle-btn {
-  width: 60px;
-  height: 60px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   border: 5px solid #725349;
   background: #f2c94c;
   color: #725349;
-  font-size: 12px;
+  font-size: 16px;
   cursor: pointer;
   box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
   display: flex;
@@ -88,30 +114,25 @@ body {
   text-align: center;
   transition: transform 0.1s, box-shadow 0.1s;
   line-height: 1.2;
-}
-
-.circle-btn:active {
-  transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
-}
-
-.circle-btn.mix {
-  background: #4d9bea;
-  color: white;
-}
-
-.circle-btn.restart {
-  background: #e05a47;
-  color: white;
-}
-
-.circle-btn.pick {
-  background: #9b51e0;
-  color: white;
-  width: 80px;
-  height: 80px;
-  font-size: 14px;
-  z-index: 10;
+  &:active {
+    transform: translateY(2px);
+    box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
+  }
+  &.mix {
+    background: #4d9bea;
+    color: white;
+  }
+  &.restart {
+    background: #fff;
+    color: #725349;
+  }
+  &.pick {
+    background: #e05a47;
+    color: white;
+    width: 80px;
+    height: 80px;
+    z-index: 10;
+  }
 }
 
 /* --- Modal 通用淡入淡出設定 --- */
@@ -122,6 +143,17 @@ body {
   width: 100%;
   height: 100%;
   background: rgba(114, 83, 73, 0.6);
+  /* 重複斜線 */
+  background: linear-gradient(
+    45deg,
+    rgba(114, 83, 73, 0.5) 25%,
+    rgba(130, 97, 87, 0.5) 0,
+    rgba(130, 97, 87, 0.5) 50%,
+    rgba(114, 83, 73, 0.5) 0,
+    rgba(114, 83, 73, 0.5) 75%,
+    rgba(130, 97, 87, 0.5) 0
+  );
+  background-size: 120px 120px;
   backdrop-filter: blur(3px);
   display: flex;
   justify-content: center;
@@ -165,7 +197,7 @@ body {
 }
 
 .modal-content.small {
-  width: 300px;
+  width: 320px;
   padding: 20px;
   text-align: center;
 }
@@ -186,23 +218,23 @@ body {
 
 .tab-btn {
   flex: 1;
-  padding: 12px;
+  padding: 16px 12px;
   text-align: center;
   cursor: pointer;
   color: #725349;
   background: transparent;
   border: none;
-  font-size: 20px;
+  font-size: 18px;
+  background: #fff;
   transition: background 0.2s;
-}
+  &.active {
+    background: #f2c94c;
+    color: #725349;
+  }
 
-.tab-btn.active {
-  background: #f2c94c;
-  color: #725349;
-}
-
-.tab-btn:first-child {
-  border-right: 5px solid #725349;
+  &:first-child {
+    border-right: 5px solid #725349;
+  }
 }
 
 .tabs-body {
@@ -230,27 +262,31 @@ body {
   margin: 0;
   overflow-y: auto;
   flex: 1;
-}
 
-.item-list li {
-  padding: 8px 12px;
-  border-bottom: 2px dashed #72534944;
-  color: #725349;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  transition: background 0.1s;
-}
+  /* 自訂卷軸 */
+  scrollbar-width: thin;
+  scrollbar-color: #72534944 transparent;
 
-.item-list li:hover {
-  background: rgba(0, 0, 0, 0.05);
-}
+  & li {
+    padding: 8px 12px;
+    border-bottom: 2px dashed #72534944;
+    color: #725349;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    transition: background 0.1s;
+  }
 
-.item-list li.drawn {
-  color: #72534966;
-  text-decoration: line-through;
-  text-decoration-thickness: 2px;
-  opacity: 0.7;
+  & li:hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  & li.drawn {
+    color: #72534966;
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    opacity: 0.7;
+  }
 }
 
 .color-dot {
@@ -273,29 +309,49 @@ textarea {
   outline: none;
   color: #725349;
   line-height: 1.5;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .input-hint {
-  font-size: 12px;
+  font-size: 16px;
   color: #72534999;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .checkbox-wrapper {
   display: flex;
   align-items: center;
-  gap: 10px;
-  font-size: 14px;
+  gap: 8px;
+  font-size: 16px;
   color: #725349;
   cursor: pointer;
-  padding: 5px 0;
 }
 
 input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  accent-color: #e05a47;
+  appearance: none;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: #f6f3eb;
+  border: 5px solid #725349;
+  cursor: pointer;
+  position: relative;
+  margin: 0;
+
+  &:checked::before {
+    content: "✔";
+    font-family: "Chiron GoRound TC", sans-serif;
+    color: #e05a47;
+    font-size: 28px;
+    position: absolute;
+    top: -4px;
+    left: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    height: 100%;
+  }
 }
 
 .modal-footer {
@@ -303,7 +359,7 @@ input[type="checkbox"] {
   border-top: 5px solid #725349;
   display: flex;
   gap: 12px;
-  background: #f6f3eb;
+  background: #eee3c3;
 }
 
 .action-btn {
@@ -372,19 +428,33 @@ input[type="checkbox"] {
   height: 150px;
   border-radius: 50%;
   background: linear-gradient(0deg, var(--bg-color) 50%, #ffffff 50%);
-  border: 5px solid #725349;
+  border: 7px solid #725349;
   margin-bottom: 30px;
   position: relative;
+
+  /* 左右晃動動畫 */
+  animation: sway 2s ease-in-out infinite;
+
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 4px;
+    background: rgba(0, 0, 0, 0.1);
+    transform: translateY(-50%);
+  }
 }
-.sphere-display::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 0;
-  width: 100%;
-  height: 4px;
-  background: rgba(0, 0, 0, 0.1);
-  transform: translateY(-50%);
+
+@keyframes sway {
+  0%,
+  100% {
+    transform: rotate(-10deg);
+  }
+  50% {
+    transform: rotate(10deg);
+  }
 }
 
 #result-text {
@@ -405,7 +475,7 @@ input[type="checkbox"] {
   border-radius: 50px;
   cursor: pointer;
   box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
-  border: 5px solid #725349;
+  border: 7px solid #725349;
 }
 .close-result-btn:active {
   transform: translateY(3px);
