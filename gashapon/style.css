@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Bungee&family=Chiron+GoRound+TC:wght@200..900&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Chiron+GoRound+TC:wght@200..900&display=swap");
 
 * {
   box-sizing: border-box;
@@ -6,16 +6,16 @@
   font-weight: 900;
 }
 
-body { 
-  margin: 0; 
-  overflow: hidden; 
-  background-color: #F6F3EB;  
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #f6f3eb;
   user-select: none;
   -webkit-user-select: none;
 }
 
 .hint {
-  position: absolute; 
+  position: absolute;
   top: 30px;
   width: 100%;
   text-align: center;
@@ -29,7 +29,8 @@ body {
 /* 空狀態提示 */
 #empty-message {
   position: absolute;
-  top: 50%; left: 50%;
+  top: 50%;
+  left: 50%;
   transform: translate(-50%, -50%);
   text-align: center;
   color: #725349;
@@ -76,11 +77,11 @@ body {
   height: 60px;
   border-radius: 50%;
   border: 5px solid #725349;
-  background: #F2C94C;
+  background: #f2c94c;
   color: #725349;
   font-size: 12px;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -91,23 +92,23 @@ body {
 
 .circle-btn:active {
   transform: translateY(2px);
-  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.2);
 }
 
 .circle-btn.mix {
-  background: #4D9BEA;
+  background: #4d9bea;
   color: white;
 }
 
 .circle-btn.restart {
-  background: #E05A47;
+  background: #e05a47;
   color: white;
 }
 
 .circle-btn.pick {
-  background: #9B51E0;
+  background: #9b51e0;
   color: white;
-  width: 80px; 
+  width: 80px;
   height: 80px;
   font-size: 14px;
   z-index: 10;
@@ -116,7 +117,10 @@ body {
 /* --- Modal 通用淡入淡出設定 --- */
 .modal-overlay {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(114, 83, 73, 0.6);
   backdrop-filter: blur(3px);
   display: flex;
@@ -150,11 +154,11 @@ body {
 }
 
 .modal-content {
-  background: #F6F3EB;
+  background: #f6f3eb;
   border: 5px solid #725349;
   border-radius: 20px;
   width: 380px;
-  box-shadow: 0 8px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 8px 0 rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -193,7 +197,7 @@ body {
 }
 
 .tab-btn.active {
-  background: #F2C94C;
+  background: #f2c94c;
   color: #725349;
 }
 
@@ -239,7 +243,7 @@ body {
 }
 
 .item-list li:hover {
-  background: rgba(0,0,0,0.05);
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .item-list li.drawn {
@@ -254,7 +258,7 @@ body {
   height: 12px;
   border-radius: 50%;
   margin-right: 10px;
-  border: 2px solid rgba(0,0,0,0.1);
+  border: 2px solid rgba(0, 0, 0, 0.1);
 }
 
 textarea {
@@ -291,7 +295,7 @@ textarea {
 input[type="checkbox"] {
   width: 20px;
   height: 20px;
-  accent-color: #E05A47;
+  accent-color: #e05a47;
 }
 
 .modal-footer {
@@ -299,7 +303,7 @@ input[type="checkbox"] {
   border-top: 5px solid #725349;
   display: flex;
   gap: 12px;
-  background: #F6F3EB;
+  background: #f6f3eb;
 }
 
 .action-btn {
@@ -309,20 +313,37 @@ input[type="checkbox"] {
   font-size: 16px;
   cursor: pointer;
   border: 5px solid #725349;
-  box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.1);
 }
-.action-btn:active { transform: translateY(1px); box-shadow: none; }
+.action-btn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
 
-.btn-close { background: #fff; color: #725349; }
-.btn-restart { background: #E05A47; color: white; }
-.btn-yes { background: #E05A47; color: white; }
-.btn-no { background: #fff; color: #725349; }
-
+.btn-close {
+  background: #fff;
+  color: #725349;
+}
+.btn-restart {
+  background: #e05a47;
+  color: white;
+}
+.btn-yes {
+  background: #e05a47;
+  color: white;
+}
+.btn-no {
+  background: #fff;
+  color: #725349;
+}
 
 /* --- Result Overlay 淡入淡出設定 --- */
 #result-overlay {
   position: absolute;
-  top: 0; left: 0; width: 100%; height: 100%;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: rgba(246, 243, 235, 0.9);
   display: flex;
   flex-direction: column;
@@ -351,15 +372,18 @@ input[type="checkbox"] {
   height: 150px;
   border-radius: 50%;
   background: linear-gradient(0deg, var(--bg-color) 50%, #ffffff 50%);
-  border: 6px solid #725349;
+  border: 5px solid #725349;
   margin-bottom: 30px;
   position: relative;
 }
 .sphere-display::after {
-  content: '';
+  content: "";
   position: absolute;
-  top: 50%; left: 0; width: 100%; height: 4px;
-  background: rgba(0,0,0,0.1);
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: rgba(0, 0, 0, 0.1);
   transform: translateY(-50%);
 }
 
@@ -373,16 +397,21 @@ input[type="checkbox"] {
 }
 
 .close-result-btn {
-  background: #E05A47;
+  background: #e05a47;
   border: none;
   color: white;
   padding: 15px 40px;
   font-size: 20px;
   border-radius: 50px;
   cursor: pointer;
-  box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+  box-shadow: 0 5px 0 rgba(0, 0, 0, 0.2);
   border: 5px solid #725349;
 }
-.close-result-btn:active { transform: translateY(3px); box-shadow: none; }
+.close-result-btn:active {
+  transform: translateY(3px);
+  box-shadow: none;
+}
 
-body.hovering { cursor: pointer; }
+body.hovering {
+  cursor: pointer;
+}
