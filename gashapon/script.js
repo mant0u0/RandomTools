@@ -92,8 +92,12 @@ function init() {
   window.addEventListener(
     "touchmove",
     (e) => {
+      // 如果手指是在 清單(.item-list) 或 輸入框(textarea) 上滑動，就允許捲動
+      if (e.target.closest(".item-list") || e.target.closest("textarea")) {
+        return;
+      }
       updateMousePosition(e);
-      e.preventDefault();
+      e.preventDefault(); // 其他區域維持原本邏輯 (禁止畫面被拖動)
     },
     { passive: false }
   );
@@ -444,6 +448,7 @@ function onMouseDown(e) {
   if (
     e.target.closest(".bottom-left-controls") ||
     e.target.closest(".bottom-right-controls") ||
+    e.target.closest(".top-left-controls") ||
     e.target.closest(".modal-content") ||
     e.target.closest("#result-overlay")
   )
