@@ -73,7 +73,6 @@ body {
   margin-top: 0px;
 }
 
-/* 左上角控制區 */
 .top-left-controls {
   position: absolute;
   top: 20px;
@@ -100,7 +99,6 @@ body {
   }
 }
 
-/* 左下角控制區 */
 .bottom-left-controls {
   position: absolute;
   bottom: 20px;
@@ -110,19 +108,19 @@ body {
   align-items: center;
 }
 
-/* 右下角控制區 */
 .bottom-right-controls {
   position: absolute;
   bottom: 20px;
   right: 20px;
-  pointer-events: auto;
   display: flex;
-  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  align-items: flex-end;
 }
 
 .circle-btn {
-  width: 80px;
-  height: 80px;
+  width: 68px;
+  height: 68px;
   border-radius: 50%;
   border: 5px solid #725349;
   font-size: 18px;
@@ -139,6 +137,13 @@ body {
 
 .circle-btn.pick {
   background: #e05a47;
+  width: 80px;
+  height: 80px;
+}
+
+/* 新增換色按鈕樣式 (藍色) */
+.circle-btn.mix {
+  background: #4d9bea;
 }
 
 .circle-btn:active {

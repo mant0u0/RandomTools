@@ -8,8 +8,8 @@ let isHolding = false;
 let needsResultCheck = false;
 let mouse = new THREE.Vector2();
 let raycaster = new THREE.Raycaster();
-const FRUSTUM_SIZE = 23;
-let currentDiceCount = 3;
+
+// 視野設定：移除常數，改用動態計算
 let dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -15);
 
 // UI
@@ -20,6 +20,7 @@ const uiCountDisplay = document.getElementById("count-display");
 const btnPlus = document.getElementById("btn-plus");
 const btnMinus = document.getElementById("btn-minus");
 const btnThrow = document.getElementById("btn-throw");
+const btnColor = document.getElementById("btn-color"); // 新增按鈕
 
 const palette = [
   "#EAA14D",
@@ -37,18 +38,33 @@ const commonColors = {
   shadow: "#F3BD2E",
 };
 
+// 全域幾何體共用 (提升效能)
+let diceGeo, outlineGeo, shadowGeo, diceShape;
+let diceMatCommon, outlineMat, shadowMat;
+let currentDiceCount = 3;
+
 init();
 animate();
+
+// 判斷視野大小 (手機版拉遠)
+function getFrustumSize() {
+  const aspect = window.innerWidth / window.innerHeight;
+  // 如果是直向螢幕 (手機)，視野設大一點 (Zoom Out)
+  return aspect < 1.0 ? 35 : 23;
+}
 
 function init() {
   scene = new THREE.Scene();
   scene.background = new THREE.Color("#F6F3EB");
+
   const aspect = window.innerWidth / window.innerHeight;
+  const frustumSize = getFrustumSize();
+
   camera = new THREE.OrthographicCamera(
-    (FRUSTUM_SIZE * aspect) / -2,
-    (FRUSTUM_SIZE * aspect) / 2,
-    FRUSTUM_SIZE / 2,
-    FRUSTUM_SIZE / -2,
+    (frustumSize * aspect) / -2,
+    (frustumSize * aspect) / 2,
+    frustumSize / 2,
+    frustumSize / -2,
     1,
     1000
   );
@@ -77,7 +93,12 @@ function init() {
   );
 
   createPhysicsWalls(wallMat);
-  updateDiceCount(currentDiceCount);
+
+  // 預先建立共用的幾何體與材質，避免每次生成都重新建立
+  initSharedResources();
+
+  // 初始生成
+  updateDiceCount(currentDiceCount, true); // true 代表初始化，排整齊
 
   window.addEventListener("resize", onWindowResize);
   window.addEventListener("mousedown", onInputStart);
@@ -89,6 +110,38 @@ function init() {
   window.addEventListener("touchend", onInputEnd);
 
   setupUIEvents();
+}
+
+function initSharedResources() {
+  const boxSize = 2.5;
+  const radius = 0.4;
+  diceGeo = new RoundedBoxGeometry(boxSize, boxSize, boxSize, 4, radius);
+
+  // 邊框放大設定
+  const outlineSize = boxSize * 1.11;
+  const outlineRadius = 0.55;
+  outlineGeo = new RoundedBoxGeometry(
+    outlineSize,
+    outlineSize,
+    outlineSize,
+    4,
+    outlineRadius
+  );
+
+  shadowGeo = new THREE.CircleGeometry(boxSize * 0.6, 32);
+  diceShape = new CANNON.Box(
+    new CANNON.Vec3(boxSize / 2, boxSize / 2, boxSize / 2)
+  );
+
+  outlineMat = new THREE.MeshBasicMaterial({
+    color: commonColors.outline,
+    side: THREE.BackSide,
+  });
+  shadowMat = new THREE.MeshBasicMaterial({
+    color: commonColors.shadow,
+    transparent: true,
+    opacity: 0.2,
+  });
 }
 
 function setupUIEvents() {
@@ -111,7 +164,155 @@ function setupUIEvents() {
   btnThrow.addEventListener("click", () => {
     manualThrow();
   });
+
+  btnColor.addEventListener("click", () => {
+    changeDiceColors();
+  });
 }
+
+// --- 骰子增減邏輯 ---
+
+function updateDiceCount(targetCount, isInit = false) {
+  if (isInit) {
+    // 初始化：排排站
+    for (let i = 0; i < targetCount; i++) {
+      const startX = (i - (targetCount - 1) / 2) * 2.5;
+      addSingleDie(new CANNON.Vec3(startX, 2.5, 0));
+    }
+    return;
+  }
+
+  const currentCount = diceObjects.filter((d) => !d.isShrinking).length;
+  const diff = targetCount - currentCount;
+
+  if (diff > 0) {
+    // 增加：從空中掉下來
+    for (let i = 0; i < diff; i++) {
+      // 隨機位置生成
+      const pos = new CANNON.Vec3(
+        (Math.random() - 0.5) * 5,
+        15 + i * 2, // 稍微錯開高度
+        (Math.random() - 0.5) * 5
+      );
+      addSingleDie(pos, true); // true 代表要施加隨機旋轉速度
+    }
+  } else if (diff < 0) {
+    // 減少：移除最後幾顆 (縮小消失)
+    const activeDice = diceObjects.filter((d) => !d.isShrinking);
+    for (let i = 0; i < Math.abs(diff); i++) {
+      const target = activeDice[activeDice.length - 1 - i];
+      if (target) {
+        removeSingleDie(target);
+      }
+    }
+  }
+
+  if (uiResult) uiResult.classList.remove("show");
+}
+
+function addSingleDie(position, isDrop = false) {
+  const randomColor = palette[Math.floor(Math.random() * palette.length)];
+  const diceMaterials = [];
+  for (let j = 1; j <= 6; j++) {
+    diceMaterials.push(
+      new THREE.MeshBasicMaterial({
+        map: createVectorDiceTexture(j, randomColor),
+      })
+    );
+  }
+
+  // 材質對應 UV
+  const matArray = [
+    diceMaterials[0],
+    diceMaterials[5],
+    diceMaterials[1],
+    diceMaterials[4],
+    diceMaterials[2],
+    diceMaterials[3],
+  ];
+
+  const mesh = new THREE.Mesh(diceGeo, matArray);
+  scene.add(mesh);
+
+  const outline = new THREE.Mesh(outlineGeo, outlineMat);
+  scene.add(outline);
+
+  const shadow = new THREE.Mesh(shadowGeo, shadowMat);
+  shadow.rotation.x = -Math.PI / 2;
+  scene.add(shadow);
+
+  const body = new CANNON.Body({
+    mass: 5,
+    shape: diceShape,
+    position: position,
+    sleepSpeedLimit: 0.5,
+  });
+
+  body.quaternion.setFromEuler(
+    Math.random() * Math.PI,
+    Math.random() * Math.PI,
+    Math.random() * Math.PI
+  );
+
+  if (isDrop) {
+    // 如果是新增的，給一點隨機速度
+    body.velocity.set((Math.random() - 0.5) * 5, -5, (Math.random() - 0.5) * 5);
+    body.angularVelocity.set(
+      (Math.random() - 0.5) * 10,
+      (Math.random() - 0.5) * 10,
+      (Math.random() - 0.5) * 10
+    );
+  }
+
+  world.addBody(body);
+
+  const dieObj = {
+    mesh,
+    outline,
+    shadow,
+    body,
+    diceMaterials, // 存起來以便換色
+    spinOffset: 0,
+    isReturning: false,
+    isShrinking: false, // 新增屬性
+  };
+
+  diceObjects.push(dieObj);
+}
+
+function removeSingleDie(dieObj) {
+  // 標記為縮小中，動畫迴圈會處理它
+  dieObj.isShrinking = true;
+  // 為了避免縮小時還在碰撞，可以將碰撞群組設為 0 或直接移除剛體
+  // 這裡選擇直接移除剛體，讓視覺縮小即可
+  world.removeBody(dieObj.body);
+}
+
+function changeDiceColors() {
+  diceObjects.forEach((obj) => {
+    if (obj.isShrinking) return;
+
+    // 隨機選新顏色
+    const newColor = palette[Math.floor(Math.random() * palette.length)];
+
+    // 更新材質貼圖
+    obj.diceMaterials.forEach((mat, index) => {
+      // index 對應 0~5，也就是點數 1~6
+      if (mat.map) mat.map.dispose();
+      mat.map = createVectorDiceTexture(index + 1, newColor);
+      mat.needsUpdate = true;
+    });
+
+    // 稍微跳動一下增加回饋感
+    if (!isHolding) {
+      obj.body.wakeUp();
+      obj.body.velocity.y = 5;
+      obj.body.angularVelocity.set(Math.random(), Math.random(), Math.random());
+    }
+  });
+}
+
+// --- 其他邏輯保持不變 ---
 
 function updateMousePosition(e) {
   let x, y;
@@ -127,7 +328,6 @@ function updateMousePosition(e) {
 }
 
 function onInputStart(e) {
-  // 排除 左下角與右下角 UI 點擊
   if (
     e.target.closest(".bottom-right-controls") ||
     e.target.closest(".bottom-left-controls") ||
@@ -143,6 +343,7 @@ function onInputStart(e) {
   updateMousePosition(e);
 
   diceObjects.forEach((obj) => {
+    if (obj.isShrinking) return;
     obj.body.wakeUp();
     obj.spinOffset = Math.random() * 100;
     obj.isReturning = false;
@@ -174,6 +375,7 @@ function manualThrow() {
   needsResultCheck = false;
 
   diceObjects.forEach((obj) => {
+    if (obj.isShrinking) return;
     obj.body.wakeUp();
     obj.body.position.set(
       (Math.random() - 0.5) * 5,
@@ -278,115 +480,10 @@ function createVectorDiceTexture(number, colorHex) {
   return new THREE.CanvasTexture(canvas);
 }
 
-function updateDiceCount(count) {
-  diceObjects.forEach((obj) => {
-    scene.remove(obj.mesh);
-    scene.remove(obj.outline);
-    scene.remove(obj.shadow);
-    world.removeBody(obj.body);
-    if (obj.mesh.material) {
-      obj.mesh.material.forEach((m) => {
-        if (m.map) m.map.dispose();
-        m.dispose();
-      });
-    }
-  });
-  diceObjects = [];
-  if (uiResult) uiResult.classList.remove("show");
-
-  const boxSize = 2.5;
-  // 實體圓角半徑
-  const radius = 0.4;
-  const geometry = new RoundedBoxGeometry(boxSize, boxSize, boxSize, 4, radius);
-
-  // 1. 尺寸放大 1.11 倍
-  // 2. 圓角半徑改為 0.55 (比 0.4 大，讓轉角看起來更舒適)
-  const outlineSize = boxSize * 1.11;
-  const outlineRadius = 0.55;
-  const outlineGeo = new RoundedBoxGeometry(
-    outlineSize,
-    outlineSize,
-    outlineSize,
-    4,
-    outlineRadius
-  );
-
-  const shadowGeo = new THREE.CircleGeometry(boxSize * 0.6, 32);
-  const shape = new CANNON.Box(
-    new CANNON.Vec3(boxSize / 2, boxSize / 2, boxSize / 2)
-  );
-
-  const outlineMat = new THREE.MeshBasicMaterial({
-    color: commonColors.outline,
-    side: THREE.BackSide,
-  });
-  const shadowMat = new THREE.MeshBasicMaterial({
-    color: commonColors.shadow,
-    transparent: true,
-    opacity: 0.2,
-  });
-
-  for (let i = 0; i < count; i++) {
-    const randomColor = palette[Math.floor(Math.random() * palette.length)];
-    const diceMaterials = [];
-    for (let j = 1; j <= 6; j++) {
-      diceMaterials.push(
-        new THREE.MeshBasicMaterial({
-          map: createVectorDiceTexture(j, randomColor),
-        })
-      );
-    }
-
-    const matArray = [
-      diceMaterials[0],
-      diceMaterials[5],
-      diceMaterials[1],
-      diceMaterials[4],
-      diceMaterials[2],
-      diceMaterials[3],
-    ];
-
-    const mesh = new THREE.Mesh(geometry, matArray);
-    scene.add(mesh);
-
-    const outline = new THREE.Mesh(outlineGeo, outlineMat);
-    outline.position.copy(mesh.position);
-    // 這裡不需要再 setScalar 了，因為幾何體已經做大了
-    scene.add(outline);
-
-    const shadow = new THREE.Mesh(shadowGeo, shadowMat);
-    shadow.rotation.x = -Math.PI / 2;
-    shadow.position.y = 0.01;
-    scene.add(shadow);
-
-    const startX = (i - (count - 1) / 2) * 2.5;
-    const body = new CANNON.Body({
-      mass: 5,
-      shape: shape,
-      position: new CANNON.Vec3(startX, boxSize, 0),
-      sleepSpeedLimit: 0.5,
-    });
-    body.quaternion.setFromEuler(
-      Math.random() * Math.PI,
-      Math.random() * Math.PI,
-      Math.random() * Math.PI
-    );
-    world.addBody(body);
-
-    diceObjects.push({
-      mesh,
-      outline,
-      shadow,
-      body,
-      spinOffset: 0,
-      isReturning: false,
-    });
-  }
-}
-
 function releaseDice() {
   const SAFE_LIMIT = 9;
   diceObjects.forEach((obj) => {
+    if (obj.isShrinking) return;
     const { body } = obj;
     const isOutside =
       Math.abs(body.position.x) > SAFE_LIMIT ||
@@ -431,7 +528,8 @@ function calculateResult() {
   ];
   const faceValues = [1, 6, 2, 5, 3, 4];
 
-  diceObjects.forEach(({ mesh }) => {
+  const activeDice = diceObjects.filter((d) => !d.isShrinking);
+  activeDice.forEach(({ mesh }) => {
     let maxDot = -Infinity;
     let resultValue = 1;
     faceNormals.forEach((normal, index) => {
@@ -452,8 +550,37 @@ function calculateResult() {
   needsResultCheck = false;
 }
 
+function cleanUpDie(obj) {
+  scene.remove(obj.mesh);
+  scene.remove(obj.outline);
+  scene.remove(obj.shadow);
+  // 釋放材質
+  obj.diceMaterials.forEach((m) => {
+    if (m.map) m.map.dispose();
+    m.dispose();
+  });
+}
+
 function animate() {
   requestAnimationFrame(animate);
+
+  // --- 處理縮小消失的骰子 ---
+  for (let i = diceObjects.length - 1; i >= 0; i--) {
+    const obj = diceObjects[i];
+    if (obj.isShrinking) {
+      const shrinkSpeed = 0.85;
+      obj.mesh.scale.multiplyScalar(shrinkSpeed);
+      obj.outline.scale.multiplyScalar(shrinkSpeed);
+      obj.shadow.scale.multiplyScalar(shrinkSpeed);
+
+      // 縮小到看不見就移除
+      if (obj.mesh.scale.x < 0.05) {
+        cleanUpDie(obj);
+        diceObjects.splice(i, 1);
+      }
+      continue; // 跳過物理計算
+    }
+  }
 
   if (isHolding) {
     raycaster.setFromCamera(mouse, camera);
@@ -462,6 +589,7 @@ function animate() {
     if (intersect) {
       const time = performance.now() * 0.01;
       diceObjects.forEach((obj, i) => {
+        if (obj.isShrinking) return;
         const offsetX = Math.sin(time + i) * 1.0;
         const offsetZ = Math.cos(time + i * 2) * 1.0;
         obj.body.position.x +=
@@ -482,6 +610,7 @@ function animate() {
   } else {
     const time = performance.now() * 0.01;
     diceObjects.forEach((obj) => {
+      if (obj.isShrinking) return;
       if (obj.isReturning) {
         obj.body.position.x += (0 - obj.body.position.x) * 0.15;
         obj.body.position.z += (0 - obj.body.position.z) * 0.15;
@@ -502,8 +631,12 @@ function animate() {
     world.step(1 / 60);
   }
 
-  for (let i = 0; i < diceObjects.length; i++) {
-    const { mesh, outline, shadow, body } = diceObjects[i];
+  diceObjects.forEach((obj) => {
+    if (obj.isShrinking) {
+      // 縮小的骰子位置只跟隨最後的物理位置(因為剛體移除了)
+      return;
+    }
+    const { mesh, outline, shadow, body } = obj;
     mesh.position.copy(body.position);
     mesh.quaternion.copy(body.quaternion);
     outline.position.copy(mesh.position);
@@ -515,11 +648,12 @@ function animate() {
     const opacity = Math.max(0, 0.2 - height * 0.01);
     shadow.scale.setScalar(scale);
     shadow.material.opacity = opacity;
-  }
+  });
 
   if (needsResultCheck) {
     let allStopped = true;
     for (let o of diceObjects) {
+      if (o.isShrinking) continue;
       if (o.isReturning) {
         allStopped = false;
         break;
@@ -539,10 +673,14 @@ function animate() {
 
 function onWindowResize() {
   const aspect = window.innerWidth / window.innerHeight;
-  camera.left = (-FRUSTUM_SIZE * aspect) / 2;
-  camera.right = (FRUSTUM_SIZE * aspect) / 2;
-  camera.top = FRUSTUM_SIZE / 2;
-  camera.bottom = -FRUSTUM_SIZE / 2;
+
+  // RWD 調整
+  const frustumSize = getFrustumSize();
+
+  camera.left = (-frustumSize * aspect) / 2;
+  camera.right = (frustumSize * aspect) / 2;
+  camera.top = frustumSize / 2;
+  camera.bottom = -frustumSize / 2;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 }
