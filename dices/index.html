@@ -3,25 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>饅頭隨機小工具 - 3D骰子、硬幣、扭蛋機 | Mantou Random Tools</title>
-    <meta
-      name="description"
-      content="饅頭隨機小工具集合，提供3D物理效果的硬幣翻轉、骰子投擲、扭蛋機抽獎等趣味工具。免費線上使用，適合決策、遊戲、抽獎使用。"
-    />
-    <meta
-      name="keywords"
-      content="隨機工具,3D骰子,硬幣翻轉,扭蛋機,抽獎工具,決策工具,線上工具,饅頭工具"
-    />
-
-    <!-- Open Graph -->
-    <meta property="og:title" content="饅頭隨機小工具 - 3D骰子、硬幣、扭蛋機" />
-    <meta
-      property="og:description"
-      content="提供3D物理效果的隨機工具，包含硬幣翻轉、骰子投擲、扭蛋機抽獎等功能"
-    />
-    <meta property="og:type" content="website" />
-    <meta property="og:site_name" content="Mantou Random Tools" />
-
+    <title>饅頭隨機小工具 - 3D骰子</title>
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
@@ -41,42 +23,43 @@
         }
       }
     </script>
-    <div id="ui-container">
-      <div class="set-bar">
-        <p class="bar-text">DICE</p>
-        <label class="select">
-          <select id="diceCount">
-            <option value="1">1</option>
-            <option value="2">2</option>
-            <option value="3" selected>3</option>
-            <option value="4">4</option>
-            <option value="5">5</option>
-            <option value="6">6</option>
-            <option value="7">7</option>
-            <option value="8">8</option>
-            <option value="9">9</option>
-            <option value="10">10</option>
-            <option value="11">11</option>
-            <option value="12">12</option>
-            <option value="13">13</option>
-            <option value="14">14</option>
-            <option value="15">15</option>
-            <option value="16">16</option>
-            <option value="17">17</option>
-            <option value="18">18</option>
-            <option value="19">19</option>
-            <option value="20">20</option>
-          </select>
-        </label>
-      </div>
 
+    <!-- 提示文字 -->
+    <div class="hint">CLICK ANYWHERE TO DRAG</div>
+
+    <div id="ui-container">
+      <!-- 結果顯示 -->
       <div id="result-board" class="result-board">
         <span id="total-score">0</span>
         <span class="sub-text" id="detail-score"></span>
       </div>
 
-      <div class="hint">Click anywhere to roll</div>
+      <!-- 左上角 返回 -->
+      <div class="top-left-controls">
+        <a class="back-btn" href="../index.html" title="返回"
+          ><i class="fas fa-angle-left"></i>返回</a
+        >
+      </div>
+
+      <!-- 左下角：數量設定 -->
+      <div class="bottom-left-controls">
+        <div class="counter-control">
+          <button class="count-btn" id="btn-minus">
+            <i class="fas fa-minus"></i>
+          </button>
+          <span class="count-display" id="count-display">3</span>
+          <button class="count-btn" id="btn-plus">
+            <i class="fas fa-plus"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- 右下角：投擲按鈕 -->
+      <div class="bottom-right-controls">
+        <button class="circle-btn pick" id="btn-throw">投擲</button>
+      </div>
     </div>
+
     <script type="module" src="./script.js"></script>
   </body>
 </html>
