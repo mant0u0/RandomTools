@@ -14,6 +14,7 @@ body {
   -webkit-user-select: none;
 }
 
+/* 提示文字 */
 .hint {
   position: fixed;
   top: 30px;
@@ -24,6 +25,7 @@ body {
   font-size: 16px;
   letter-spacing: 1px;
   pointer-events: none;
+  text-transform: uppercase;
   @media (max-width: 600px) {
     top: auto;
     bottom: 110px;
