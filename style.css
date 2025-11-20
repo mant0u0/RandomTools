@@ -1,0 +1,160 @@
+@import url("https://fonts.googleapis.com/css2?family=Bungee&display=swap");
+
+* {
+  box-sizing: border-box;
+  font-family: "Chiron GoRound TC", "Bungee", sans-serif !important;
+  font-weight: 900;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  overflow-y: scroll;
+  background-color: #f6f3eb;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#ui-container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+}
+
+.main-title {
+  text-align: center;
+  margin-bottom: 50px;
+  color: #725349;
+}
+
+.main-title h1 {
+  font-size: 60px;
+  font-weight: 900;
+  margin: 0;
+  letter-spacing: 2px;
+}
+
+.subtitle {
+  font-size: 20px;
+  font-weight: bold;
+  color: #72534999;
+  margin: 10px 0 0 0;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+
+.tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 30px;
+  max-width: 900px;
+  width: 100%;
+  margin-bottom: 40px;
+}
+
+.tool-card {
+  background: #725349;
+  border-radius: 20px;
+  padding: 30px;
+  text-decoration: none;
+  color: white;
+  text-align: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 0px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 200px;
+  justify-content: center;
+}
+
+.tool-card:hover {
+  background: #8b6457;
+}
+
+.tool-card h3 {
+  font-size: 24px;
+  font-weight: bold;
+  margin: 0 0 10px 0;
+  letter-spacing: 1px;
+}
+
+.tool-card p {
+  font-size: 14px;
+  margin: 0;
+  opacity: 0.8;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.hint {
+  color: #72534999;
+  font-weight: bold;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-size: 16px;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+  .main-title h1 {
+    font-size: 40px;
+  }
+
+  .tools-grid {
+    grid-template-columns: 1fr;
+    gap: 20px;
+    max-width: 400px;
+  }
+
+  .tool-card {
+    padding: 25px;
+    min-height: 180px;
+  }
+
+  .tool-card h3 {
+    font-size: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  #ui-container {
+    padding: 15px;
+  }
+
+  .main-title h1 {
+    font-size: 32px;
+  }
+
+  .subtitle {
+    font-size: 16px;
+  }
+
+  .tools-grid {
+    margin-bottom: 30px;
+  }
+
+  .tool-card {
+    padding: 20px;
+    min-height: 160px;
+  }
+
+  .tool-card h3 {
+    font-size: 18px;
+  }
+
+  .tool-card p {
+    font-size: 13px;
+  }
+
+  .hint {
+    font-size: 14px;
+  }
+}
