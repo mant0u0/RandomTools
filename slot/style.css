@@ -1,0 +1,173 @@
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Chiron+GoRound+TC:wght@400;900&display=swap");
+
+* {
+  box-sizing: border-box;
+  font-family: "Chiron GoRound TC", sans-serif;
+  font-weight: 900;
+}
+
+body {
+  margin: 0;
+  overflow: hidden;
+  background-color: #F6F3EB; 
+  user-select: none;
+}
+
+/* --- 遮罩：中間透明，上下實色 --- */
+.gradient-mask {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 5;
+  /* 這裡調整了漸層比例，讓圓柱體看起來更像埋在裡面 */
+  background: linear-gradient(
+    to bottom, 
+    #F6F3EB 0%, 
+    #F6F3EB 20%, 
+    rgba(246, 243, 235, 0) 40%, 
+    rgba(246, 243, 235, 0) 60%, 
+    #F6F3EB 80%, 
+    #F6F3EB 100%
+  );
+}
+
+#ui-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.status-board {
+  position: absolute;
+  top: 8%; /* 稍微往下移 */
+  left: 50%;
+  transform: translateX(-50%);
+  background: #fff;
+  border: 5px solid #725349;
+  padding: 10px 40px;
+  border-radius: 50px;
+  box-shadow: 0 5px 0 rgba(0,0,0,0.1);
+}
+
+#status-text {
+  font-family: "Bungee", serif;
+  font-size: 32px;
+  color: #725349;
+  text-transform: uppercase;
+}
+
+.reel-controls {
+  position: absolute;
+  bottom: 15%;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 20px; 
+  pointer-events: auto;
+  width: 30%;
+  justify-content: center;
+}
+
+.control-group {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+}
+
+.stop-btn {
+  width: 100%;
+  max-width: 100px;
+  height: 60px;
+  background: #e05a47;
+  border: 5px solid #725349;
+  border-radius: 20px;
+  color: white;
+  font-size: 18px;
+  cursor: pointer;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  transition: transform 0.1s, background 0.2s;
+}
+
+.stop-btn:active {
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+.stop-btn:disabled {
+  background: #d6cec0;
+  color: #a89f91;
+  border-color: #a89f91;
+  cursor: default;
+  transform: translateY(4px);
+  box-shadow: none;
+}
+
+.top-left-controls {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  pointer-events: auto;
+}
+.back-btn {
+  display: block;
+  padding: 12px 20px;
+  background: #fff;
+  border: 4px solid #725349;
+  border-radius: 100px;
+  color: #725349;
+  text-decoration: none;
+  font-size: 16px;
+  box-shadow: 0 4px 0 rgba(0,0,0,0.1);
+  transition: transform 0.1s;
+}
+.back-btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
+.back-btn i {
+    margin-right: 6px;
+}
+
+.bottom-right-controls {
+  position: absolute;
+  bottom: 30px;
+  right: 30px;
+  pointer-events: auto;
+}
+
+.circle-btn {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  border: 5px solid #725349;
+  font-size: 24px;
+  cursor: pointer;
+  box-shadow: 0 6px 0 rgba(0,0,0,0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  transition: transform 0.1s;
+}
+
+.circle-btn.pick {
+  background: #f2c94c;
+  color: #725349;
+}
+
+.circle-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.2);
+}
+
+.circle-btn:disabled {
+  filter: grayscale(0.8);
+  cursor: default;
+}

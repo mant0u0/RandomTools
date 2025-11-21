@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Mantou 3D Slot</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+  <body>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://esm.sh/three@0.160.0",
+          "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/"
+        }
+      }
+    </script>
+
+    <!-- 上下淡入淡出遮罩 -->
+    <div class="gradient-mask"></div>
+
+    <div id="ui-container">
+      <div class="status-board">
+        <div id="status-text">READY</div>
+      </div>
+
+      <div class="reel-controls">
+        <div class="control-group">
+          <button class="stop-btn" id="btn-stop-0" disabled>STOP</button>
+        </div>
+        <div class="control-group">
+          <button class="stop-btn" id="btn-stop-1" disabled>STOP</button>
+        </div>
+        <div class="control-group">
+          <button class="stop-btn" id="btn-stop-2" disabled>STOP</button>
+        </div>
+      </div>
+
+      <div class="top-left-controls">
+        <a class="back-btn" href="../index.html" title="返回"> <i class="fas fa-angle-left"></i>返回 </a>
+      </div>
+
+      <div class="bottom-right-controls">
+        <button class="circle-btn pick" id="btn-spin">SPIN</button>
+      </div>
+    </div>
+
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
