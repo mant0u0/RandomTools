@@ -57,7 +57,7 @@ body {
 }
 
 #status-text {
-  font-family: "Bungee", serif;
+  /* font-family: "Bungee", serif; */
   font-size: 32px;
   color: #725349;
   text-transform: uppercase;

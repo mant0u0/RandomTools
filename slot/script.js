@@ -26,24 +26,14 @@ const SYMBOL_DATA = [
   { id: 7, nameCN: '藍七', path: './assets/symbol_7.png' },
 ]
 
-// --- 機率控制設定 ---
-// 規則 2：機率權重 (數字越大越容易中)
-// 藍球 > 鈴鐺 > 櫻桃 > 西瓜 > 方塊 > 星星 > 紅七 > 藍七
-const SYMBOL_WEIGHTS = [
-  50, // 藍球 (最容易)
-  35, // 鈴鐺
-  25, // 櫻桃
-  15, // 西瓜
-  10, // 方塊
-  5, // 星星
-  3, // 紅七
-  1, // 藍七 (最難)
-]
+// 機率權重
+const SYMBOL_WEIGHTS = [50, 35, 25, 15, 10, 5, 3, 1]
 
-// 遊戲狀態變數
-let spinsSinceLastWin = 0 // 距離上次中獎轉了幾次
-let targetSpinsForWin = getRandomInt(2, 5) // 規則 1：下次必定中獎的轉數 (2~5)
-let nextReelData = [] // 儲存這局預先算好的結果 [ {top, center, bottom}, ... ]
+// 遊戲狀態
+let spinsSinceLastWin = 0
+let targetSpinsForWin = getRandomInt(2, 5)
+let globalSpins = 0
+let nextReelData = []
 
 const ANGLE_PER_SEGMENT = (Math.PI * 2) / REEL_SEGMENTS
 
@@ -115,6 +105,8 @@ function createReels() {
   const ringMat = new THREE.MeshBasicMaterial({ color: COLORS.outline })
   const innerCylinderGeo = new THREE.CylinderGeometry(REEL_RADIUS - 0.1, REEL_RADIUS - 0.1, REEL_WIDTH + 1, 32)
   const innerCylinderMat = new THREE.MeshBasicMaterial({ color: COLORS.background })
+  const bgGeometry = new THREE.PlaneGeometry(REEL_WIDTH * 0.98, tileHeight * 0.98)
+  const bgMaterial = new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide })
 
   for (let i = 0; i < REEL_COUNT; i++) {
     const reelGroup = new THREE.Group()
@@ -128,19 +120,25 @@ function createReels() {
         side: THREE.DoubleSide,
         transparent: true,
       })
+
       const tile = new THREE.Mesh(tileGeometry, material)
+      const bgTile = new THREE.Mesh(bgGeometry, bgMaterial)
+      bgTile.position.z = -0.1
+
+      const tileGroup = new THREE.Group()
+      tileGroup.add(bgTile)
+      tileGroup.add(tile)
 
       const angle = j * ANGLE_PER_SEGMENT
       const y = Math.cos(angle) * REEL_RADIUS
       const z = Math.sin(angle) * REEL_RADIUS
 
-      tile.position.set(0, y, z)
-      // 完美的幾何旋轉 (不依賴 lookAt)
-      tile.rotation.x = angle - Math.PI / 2
+      tileGroup.position.set(0, y, z)
+      tileGroup.rotation.x = angle - Math.PI / 2
 
       tile.userData = { symbolId: randomSymbolId }
-      reelGroup.add(tile)
       tiles.push(tile)
+      reelGroup.add(tileGroup)
     }
 
     const leftRing = new THREE.Mesh(ringGeo, ringMat)
@@ -167,45 +165,46 @@ function createReels() {
       isStopping: false,
       isStopped: true,
       targetAngle: 0,
-      // 這裡的 results 現在只用來 checkResult，設定邏輯改在 startSpin
       results: { top: 0, center: 0, bottom: 0 },
     })
   }
 }
 
-// --- 機率與結果計算核心 ---
-
-// 根據權重隨機取得一個圖案 ID
 function getWeightedRandomSymbol() {
   const totalWeight = SYMBOL_WEIGHTS.reduce((a, b) => a + b, 0)
   let random = Math.random() * totalWeight
-
   for (let i = 0; i < SYMBOL_WEIGHTS.length; i++) {
     if (random < SYMBOL_WEIGHTS[i]) {
       return i
     }
     random -= SYMBOL_WEIGHTS[i]
   }
-  return 0 // 預設回傳藍球
+  return 0
 }
 
 function getRandomInt(min, max) {
   return Math.floor(Math.random() * (max - min + 1)) + min
 }
 
-// 在旋轉開始前，就決定好這局的命運
 function prepareSpinResult() {
   spinsSinceLastWin++
-  console.log(`Spin ${spinsSinceLastWin} / Force Win at ${targetSpinsForWin}`)
+  globalSpins++
+  console.log(`Spin: ${globalSpins}, Next force win: ${targetSpinsForWin - spinsSinceLastWin}`)
 
   let isForceWin = false
+  let forceSymbolId = -1
 
-  // 規則 1：每 2~5 轉必定連線
-  if (spinsSinceLastWin >= targetSpinsForWin) {
+  if (globalSpins >= 30) {
     isForceWin = true
+    forceSymbolId = Math.random() > 0.5 ? 6 : 7 // 紅7或藍7
+    globalSpins = 0
+    spinsSinceLastWin = 0
+    targetSpinsForWin = getRandomInt(2, 5)
+  } else if (spinsSinceLastWin >= targetSpinsForWin) {
+    isForceWin = true
+    forceSymbolId = -1
   }
 
-  // 初始化結果陣列
   nextReelData = [
     { top: 0, center: 0, bottom: 0 },
     { top: 0, center: 0, bottom: 0 },
@@ -213,13 +212,11 @@ function prepareSpinResult() {
   ]
 
   if (isForceWin) {
-    // --- 強制中獎模式 ---
-    const winningSymbolId = getWeightedRandomSymbol()
+    const winningSymbolId = forceSymbolId !== -1 ? forceSymbolId : getWeightedRandomSymbol()
+    // 0~7 代表 8 種連線 (橫3 + 垂3 + 斜2)
+    const lineType = getRandomInt(0, 7)
 
-    // 隨機決定一條連線 (0:上, 1:中, 2:下, 3:左上斜, 4:左下斜)
-    const lineType = getRandomInt(0, 4)
-
-    // 先隨機填滿雜訊 (避免不想連線的地方連線，雖然機率低)
+    // 填雜訊
     for (let i = 0; i < 3; i++) {
       nextReelData[i].top = getRandomInt(0, 7)
       nextReelData[i].center = getRandomInt(0, 7)
@@ -228,17 +225,17 @@ function prepareSpinResult() {
 
     // 填入必中路徑
     if (lineType === 0) {
-      // 上
+      // 上橫
       nextReelData[0].top = winningSymbolId
       nextReelData[1].top = winningSymbolId
       nextReelData[2].top = winningSymbolId
     } else if (lineType === 1) {
-      // 中
+      // 中橫
       nextReelData[0].center = winningSymbolId
       nextReelData[1].center = winningSymbolId
       nextReelData[2].center = winningSymbolId
     } else if (lineType === 2) {
-      // 下
+      // 下橫
       nextReelData[0].bottom = winningSymbolId
       nextReelData[1].bottom = winningSymbolId
       nextReelData[2].bottom = winningSymbolId
@@ -252,14 +249,25 @@ function prepareSpinResult() {
       nextReelData[0].bottom = winningSymbolId
       nextReelData[1].center = winningSymbolId
       nextReelData[2].top = winningSymbolId
+    } else if (lineType === 5) {
+      // 左垂直
+      nextReelData[0].top = winningSymbolId
+      nextReelData[0].center = winningSymbolId
+      nextReelData[0].bottom = winningSymbolId
+    } else if (lineType === 6) {
+      // 中垂直
+      nextReelData[1].top = winningSymbolId
+      nextReelData[1].center = winningSymbolId
+      nextReelData[1].bottom = winningSymbolId
+    } else if (lineType === 7) {
+      // 右垂直
+      nextReelData[2].top = winningSymbolId
+      nextReelData[2].center = winningSymbolId
+      nextReelData[2].bottom = winningSymbolId
     }
-
-    console.log(`>>> FORCE WIN: ${SYMBOL_DATA[winningSymbolId].nameCN} (Line type ${lineType})`)
   } else {
-    // --- 隨機模式 ---
-    // 這裡還是有機率會「不小心」自然中獎，我們也算它是中獎
     for (let i = 0; i < 3; i++) {
-      nextReelData[i].top = getWeightedRandomSymbol() // 這裡也可以改用純隨機
+      nextReelData[i].top = getWeightedRandomSymbol()
       nextReelData[i].center = getWeightedRandomSymbol()
       nextReelData[i].bottom = getWeightedRandomSymbol()
     }
@@ -269,19 +277,18 @@ function prepareSpinResult() {
 function startSpin() {
   if (isSpinning) return
   isSpinning = true
-  statusText.innerText = 'SPINNING...'
-  statusText.style.color = '#333'
+  statusText.innerText = '機器轉動中...'
+  statusText.style.color = '#725349'
   btnSpin.disabled = true
   btnSpin.style.opacity = 0.5
 
-  // 1. 準備結果
   prepareSpinResult()
 
-  // 2. 開始轉動
   reels.forEach((reel, i) => {
     reel.isStopped = false
     reel.isStopping = false
     reel.speed = 0.3 + Math.random() * 0.1
+    // 開始轉動時，確保 STOP 按鈕是可用的
     stopBtns[i].disabled = false
   })
 }
@@ -299,7 +306,6 @@ function stopReel(index) {
   reel.isStopping = true
   stopBtns[index].disabled = true
 
-  // --- 讀取預先算好的結果 ---
   const data = nextReelData[index]
   reel.results = { top: data.top, center: data.center, bottom: data.bottom }
 
@@ -311,21 +317,21 @@ function stopReel(index) {
 
   reel.targetAngle = finalTargetAngle
 
-  // 找出對應位置的板子
-  const winningTileIndex = snapIndex % REEL_SEGMENTS
-  const centerTileIdx = winningTileIndex % REEL_SEGMENTS
+  const angleDiff = Math.PI / 2 - finalTargetAngle
+  let centerIndexRaw = Math.round(angleDiff / ANGLE_PER_SEGMENT)
+
+  const centerTileIdx = ((centerIndexRaw % REEL_SEGMENTS) + REEL_SEGMENTS) % REEL_SEGMENTS
   const topTileIdx = (centerTileIdx - 1 + REEL_SEGMENTS) % REEL_SEGMENTS
   const bottomTileIdx = (centerTileIdx + 1) % REEL_SEGMENTS
 
-  // 將結果「注入」板子
   setTileSymbol(reel.tiles[centerTileIdx], data.center)
   setTileSymbol(reel.tiles[topTileIdx], data.top)
   setTileSymbol(reel.tiles[bottomTileIdx], data.bottom)
 }
 
+// --- 修正：加入垂直連線判斷 ---
 function checkResult() {
   const board = reels.map((reel) => [reel.results.top, reel.results.center, reel.results.bottom])
-
   const lines = [
     {
       name: '中間線',
@@ -367,66 +373,88 @@ function checkResult() {
         [2, 0],
       ],
     },
+    // 新增垂直連線
+    {
+      name: '左垂直線',
+      path: [
+        [0, 0],
+        [0, 1],
+        [0, 2],
+      ],
+    },
+    {
+      name: '中垂直線',
+      path: [
+        [1, 0],
+        [1, 1],
+        [1, 2],
+      ],
+    },
+    {
+      name: '右垂直線',
+      path: [
+        [2, 0],
+        [2, 1],
+        [2, 2],
+      ],
+    },
   ]
 
   let winLines = []
-
   lines.forEach((line) => {
     const p = line.path
     const s1 = board[p[0][0]][p[0][1]]
     const s2 = board[p[1][0]][p[1][1]]
     const s3 = board[p[2][0]][p[2][1]]
-
     if (s1 === s2 && s2 === s3) {
       winLines.push({ name: line.name, symbolId: s1 })
     }
   })
 
   if (winLines.length > 0) {
-    // 有中獎
     const firstWin = winLines[0]
     const symbolName = SYMBOL_DATA[firstWin.symbolId].nameCN
     statusText.style.color = '#E05A47'
 
     if (winLines.length > 1) {
-      statusText.innerText = `超強運! 中 ${winLines.length} 條線!`
+      statusText.innerText = `連 ${winLines.length} 條線! （${symbolName}）`
     } else {
-      statusText.innerText = `${firstWin.name}中獎! (${symbolName})`
+      statusText.innerText = `有連線！（${symbolName}）`
     }
 
-    // --- 規則 1 處理：中獎後重置計數器 ---
     spinsSinceLastWin = 0
-    targetSpinsForWin = getRandomInt(2, 5) // 設定下一輪的保底
-    console.log(`Win! Resetting counter. Next force win in ${targetSpinsForWin} spins.`)
+    targetSpinsForWin = getRandomInt(2, 5)
   } else {
-    // 沒中獎
-    statusText.innerText = '再接再厲'
+    const noWinMessages = ['再接再厲', '可惜沒中喔', '下次一定中', '差一點點', '繼續加油']
+    statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
+
     statusText.style.color = '#725349'
   }
 
   isSpinning = false
   btnSpin.disabled = false
   btnSpin.style.opacity = 1
+
+  // --- 修正：遊戲結束後，啟用所有 STOP 按鈕作為「重開」鍵 ---
+  stopBtns.forEach((btn) => {
+    btn.disabled = false
+  })
 }
 
 function animate() {
   requestAnimationFrame(animate)
-
   let activeReels = 0
-
   reels.forEach((reel) => {
     if (!reel.isStopped) {
       reel.tiles.forEach((tile) => {
         const vector = new THREE.Vector3()
-        tile.getWorldPosition(vector)
+        tile.parent.getWorldPosition(vector)
         if (vector.z < -5 && !reel.isStopping) {
-          // 隨機換圖時也依據權重，讓畫面比較好看
           const randId = getWeightedRandomSymbol()
           setTileSymbol(tile, randId)
         }
       })
     }
-
     if (reel.isStopped) return
     activeReels++
 
@@ -446,23 +474,52 @@ function animate() {
   })
 
   if (activeReels === 0 && isSpinning) {
-    // 這裡改為呼叫 checkResult，它會負責開按鈕
     checkResult()
   }
-
   renderer.render(scene, camera)
 }
 
+// --- 修正：按鈕邏輯與鍵盤控制 ---
 function setupUI() {
+  // 1. SPIN 按鈕
   btnSpin.addEventListener('click', () => {
-    if (isSpinning) return
-    startSpin()
+    if (!isSpinning) startSpin()
   })
 
+  // 2. STOP 按鈕 (兼具開始與停止功能)
   stopBtns.forEach((btn, index) => {
     btn.addEventListener('click', () => {
-      stopReel(index)
+      if (!isSpinning) {
+        // 如果目前是閒置狀態，按任何按鈕都等於 SPIN
+        startSpin()
+      } else {
+        // 如果正在轉動，則停止對應滾輪
+        stopReel(index)
+      }
     })
+  })
+
+  // 3. 鍵盤控制 (空白鍵 or Enter)
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' || e.code === 'Enter') {
+      // 防止捲動頁面
+      e.preventDefault()
+
+      if (!isSpinning) {
+        // 閒置時 -> 開始
+        startSpin()
+      } else {
+        // 轉動時 -> 依序停止還沒停的滾輪
+        // 順序：左 -> 中 -> 右
+        if (!reels[0].isStopping && !reels[0].isStopped) {
+          stopReel(0)
+        } else if (!reels[1].isStopping && !reels[1].isStopped) {
+          stopReel(1)
+        } else if (!reels[2].isStopping && !reels[2].isStopped) {
+          stopReel(2)
+        }
+      }
+    }
   })
 }
 
