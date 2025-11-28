@@ -25,8 +25,8 @@ const SYMBOL_DATA = [
   { id: 6, nameCN: '藍七', nameEN: 'Blue 7', value: 60, path: './assets/symbol_7.png' },
 ]
 
-// 機率權重 (一般模式) - 調整權重
-const SYMBOL_WEIGHTS = [50, 35, 25, 15, 10, 3, 1]
+// 機率權重 (一般模式) - 調整權重 (降低高分符號機率)
+const SYMBOL_WEIGHTS = [60, 30, 20, 10, 5, 2, 1]
 // 機率權重 (Bonus模式) - 提高高分符號機率
 const BONUS_WEIGHTS = [10, 40, 30, 30, 30, 15, 5]
 
@@ -34,7 +34,7 @@ const BONUS_WEIGHTS = [10, 40, 30, 30, 30, 15, 5]
 let score = 50
 let spinCount = 0
 let spinsSinceLastBonusCheck = 0
-let nextBonusCheck = getRandomInt(15, 20)
+let nextBonusCheck = getRandomInt(25, 40) // 增加 Bonus 檢查間隔
 let bonusModeActive = false
 let bonusSpinsLeft = 0
 let totalBonusSpins = 0
@@ -42,7 +42,7 @@ let bonusPending = false // 標記是否即將進入 Bonus (等待提示連線�
 
 // 小獎保底機制
 let spinsSinceLastSmallWin = 0
-let targetSpinsForSmallWin = getRandomInt(2, 5)
+let targetSpinsForSmallWin = getRandomInt(5, 10) // 增加小獎保底間隔
 
 let nextReelData = []
 
@@ -232,7 +232,7 @@ function prepareSpinResult() {
       bonusModeActive = false
       confetti.stop()
       spinsSinceLastBonusCheck = 0
-      nextBonusCheck = getRandomInt(15, 20)
+      nextBonusCheck = getRandomInt(25, 40)
       console.log('Bonus Mode Ended')
     }
   } else if (bonusPending) {
@@ -273,7 +273,7 @@ function prepareSpinResult() {
       } else {
         console.log('Bonus Missed, resetting check')
         spinsSinceLastBonusCheck = 0
-        nextBonusCheck = getRandomInt(15, 20)
+        nextBonusCheck = getRandomInt(25, 40)
       }
     }
     // 檢查小獎保底 (如果沒有觸發 Bonus 檢查)
@@ -282,7 +282,7 @@ function prepareSpinResult() {
       isForceWin = true
       forceSymbolId = Math.random() > 0.5 ? 0 : 1 // 藍球(0) 或 鈴鐺(1)
       spinsSinceLastSmallWin = 0
-      targetSpinsForSmallWin = getRandomInt(2, 5)
+      targetSpinsForSmallWin = getRandomInt(5, 10)
     }
   }
 
@@ -588,13 +588,13 @@ function resetGame() {
   score = 50
   spinCount = 0
   spinsSinceLastBonusCheck = 0
-  nextBonusCheck = getRandomInt(15, 20)
+  nextBonusCheck = getRandomInt(25, 40)
   bonusModeActive = false
   bonusSpinsLeft = 0
   totalBonusSpins = 0
   bonusPending = false
   spinsSinceLastSmallWin = 0
-  targetSpinsForSmallWin = getRandomInt(2, 5)
+  targetSpinsForSmallWin = getRandomInt(5, 10)
 
   confetti.stop()
   updateScoreUI()
