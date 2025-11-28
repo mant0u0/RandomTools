@@ -34,7 +34,7 @@ const BONUS_WEIGHTS = [10, 30, 30, 30, 30, 15, 10]
 let score = 50
 let spinCount = 0
 let spinsSinceLastBonusCheck = 0
-let nextBonusCheck = getRandomInt(15, 30)
+let nextBonusCheck = getRandomInt(15, 20)
 let bonusModeActive = false
 let bonusSpinsLeft = 0
 let bonusPending = false // 標記是否即將進入 Bonus (等待提示連線結束)
@@ -59,6 +59,11 @@ const btnSpin = document.getElementById('btn-spin')
 const scoreValue = document.getElementById('score-value')
 const spinCountValue = document.getElementById('spin-count-value')
 const btnReset = document.getElementById('btn-reset')
+
+// Reset Modal
+const resetModal = document.getElementById('reset-modal')
+const btnResetConfirm = document.getElementById('btn-reset-confirm')
+const btnResetCancel = document.getElementById('btn-reset-cancel')
 
 const stopBtns = [
   document.getElementById('btn-stop-0'),
@@ -348,10 +353,14 @@ function prepareSpinResult() {
 function startSpin() {
   if (isSpinning) return
 
+  // 移除動畫
+  awardsText.style.color = '#725349'
+  awardsText.classList.remove('animate-win', 'fast')
+
   // 扣除分數
   score -= 3
   spinCount++
-  updateScoreUI()
+  updateScoreUI(true)
 
   isSpinning = true
   statusText.innerText = '機器轉動中'
@@ -484,7 +493,7 @@ function checkResult() {
 
     // 如果是藍球(id=0)
     if (firstWin.symbolId === 0) {
-      statusText.style.color = '#725349'
+      statusText.style.color = '#a78276'
       const noWinMessages = ['再玩一次～', '繼續努力～', '別放棄～', '加油加油～', '再接再厲～', '再一次吧～']
       statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
     } else {
@@ -507,8 +516,23 @@ function checkResult() {
       awardsText.style.color = '#E05A47'
       awardsText.innerText = 'BONUS'
     } else {
-      awardsText.style.color = '#725349'
       awardsText.innerText = symbolData.nameEN.toUpperCase()
+
+      // 顏色判斷：藍球用棕色，其他用紅色
+      if (firstWin.symbolId === 0) {
+        awardsText.style.color = '#725349'
+      } else {
+        awardsText.style.color = '#E05A47'
+      }
+    }
+
+    // 加入動畫 (藍球除外)
+    if (firstWin.symbolId !== 0) {
+      awardsText.classList.add('animate-win')
+    }
+
+    if (bonusModeActive) {
+      awardsText.classList.add('fast')
     }
   } else {
     const noWinMessages = ['再接再厲', '可惜沒中喔', '下次一定中', '差一點點', '繼續加油']
@@ -518,6 +542,8 @@ function checkResult() {
     if (bonusModeActive) {
       awardsText.style.color = '#E05A47'
       awardsText.innerText = 'BONUS'
+      // Bonus 模式下即使沒中獎(理論上不會)也保持動畫
+      awardsText.classList.add('animate-win', 'fast')
     } else {
       awardsText.style.color = '#725349'
       awardsText.innerText = 'TRY AGAIN'
@@ -534,9 +560,20 @@ function checkResult() {
   })
 }
 
-function updateScoreUI() {
+function updateScoreUI(isDeduction = false) {
   scoreValue.innerText = score
   spinCountValue.innerText = spinCount
+
+  // 分數改變動畫
+  const animClass = isDeduction ? 'score-deduct' : 'score-update'
+  scoreValue.classList.remove('score-update', 'score-deduct')
+  void scoreValue.offsetWidth // Trigger reflow
+  scoreValue.classList.add(animClass)
+
+  // 動畫結束後移除 class (對應 CSS 0.3s)
+  setTimeout(() => {
+    scoreValue.classList.remove(animClass)
+  }, 300)
 }
 
 function resetGame() {
@@ -554,6 +591,7 @@ function resetGame() {
 
   awardsText.innerText = 'READY'
   awardsText.style.color = '#725349'
+  awardsText.classList.remove('animate-win', 'fast')
 
   statusText.innerText = '準備'
   statusText.style.color = '#a78276'
@@ -620,8 +658,18 @@ function setupUI() {
   // 3. RESET 按鈕
   btnReset.addEventListener('click', () => {
     if (!isSpinning) {
-      resetGame()
+      resetModal.classList.add('show')
     }
+  })
+
+  // Reset Modal Buttons
+  btnResetCancel.addEventListener('click', () => {
+    resetModal.classList.remove('show')
+  })
+
+  btnResetConfirm.addEventListener('click', () => {
+    resetGame()
+    resetModal.classList.remove('show')
   })
 
   // 4. 鍵盤控制 (空白鍵 or Enter)
