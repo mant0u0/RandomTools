@@ -28,7 +28,7 @@ const SYMBOL_DATA = [
 // 機率權重 (一般模式) - 調整權重
 const SYMBOL_WEIGHTS = [50, 35, 25, 15, 10, 3, 1]
 // 機率權重 (Bonus模式) - 提高高分符號機率
-const BONUS_WEIGHTS = [10, 30, 30, 30, 30, 15, 10]
+const BONUS_WEIGHTS = [10, 40, 30, 30, 30, 15, 5]
 
 // 遊戲狀態
 let score = 50
@@ -37,6 +37,7 @@ let spinsSinceLastBonusCheck = 0
 let nextBonusCheck = getRandomInt(15, 20)
 let bonusModeActive = false
 let bonusSpinsLeft = 0
+let totalBonusSpins = 0
 let bonusPending = false // 標記是否即將進入 Bonus (等待提示連線結束)
 
 // 小獎保底機制
@@ -229,15 +230,17 @@ function prepareSpinResult() {
 
     if (bonusSpinsLeft <= 0) {
       bonusModeActive = false
+      confetti.stop()
       spinsSinceLastBonusCheck = 0
-      nextBonusCheck = getRandomInt(30, 50)
+      nextBonusCheck = getRandomInt(15, 20)
       console.log('Bonus Mode Ended')
     }
   } else if (bonusPending) {
     // 已經確定要進入 Bonus，這一局強制出 7 連線，然後開啟 Bonus 模式
     console.log('Bonus Pending -> Triggering 7s Win')
     bonusModeActive = true
-    bonusSpinsLeft = 20
+    totalBonusSpins = getRandomInt(8, 16)
+    bonusSpinsLeft = totalBonusSpins
     bonusPending = false
     isForceWin = true
     forceSymbolId = Math.random() > 0.5 ? 5 : 6 // 紅7(5) 或 藍7(6)
@@ -270,7 +273,7 @@ function prepareSpinResult() {
       } else {
         console.log('Bonus Missed, resetting check')
         spinsSinceLastBonusCheck = 0
-        nextBonusCheck = getRandomInt(30, 50)
+        nextBonusCheck = getRandomInt(15, 20)
       }
     }
     // 檢查小獎保底 (如果沒有觸發 Bonus 檢查)
@@ -369,6 +372,7 @@ function startSpin() {
   if (bonusModeActive) {
     awardsText.style.color = '#E05A47'
     awardsText.innerText = 'BONUS'
+    awardsText.classList.add('animate-win', 'fast')
   } else {
     awardsText.style.color = '#725349'
     awardsText.innerText = 'SPINNING'
@@ -497,7 +501,7 @@ function checkResult() {
       const noWinMessages = ['再玩一次～', '繼續努力～', '別放棄～', '加油加油～', '再接再厲～', '再一次吧～']
       statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
     } else {
-      statusText.style.color = '#E05A47'
+      statusText.style.color = '#b83b2a'
       const noWinMessages = [
         '恭喜中獎！',
         '太棒了！',
@@ -511,8 +515,8 @@ function checkResult() {
     }
 
     // Awards Text 顯示英文獎項
-    // 如果是 Bonus 模式且不是剛觸發的那一局 (剛觸發時 bonusSpinsLeft 為 20)，顯示 BONUS
-    if (bonusModeActive && bonusSpinsLeft < 20) {
+    // 如果是 Bonus 模式且不是剛觸發的那一局 (剛觸發時 bonusSpinsLeft 為 totalBonusSpins)，顯示 BONUS
+    if (bonusModeActive && bonusSpinsLeft < totalBonusSpins) {
       awardsText.style.color = '#E05A47'
       awardsText.innerText = 'BONUS'
     } else {
@@ -533,6 +537,10 @@ function checkResult() {
 
     if (bonusModeActive) {
       awardsText.classList.add('fast')
+      // 如果是剛觸發 Bonus (7連線)，播放彩帶
+      if (bonusSpinsLeft === totalBonusSpins) {
+        confetti.startContinuous()
+      }
     }
   } else {
     const noWinMessages = ['再接再厲', '可惜沒中喔', '下次一定中', '差一點點', '繼續加油']
@@ -580,13 +588,15 @@ function resetGame() {
   score = 50
   spinCount = 0
   spinsSinceLastBonusCheck = 0
-  nextBonusCheck = getRandomInt(30, 50)
+  nextBonusCheck = getRandomInt(15, 20)
   bonusModeActive = false
   bonusSpinsLeft = 0
+  totalBonusSpins = 0
   bonusPending = false
   spinsSinceLastSmallWin = 0
   targetSpinsForSmallWin = getRandomInt(2, 5)
 
+  confetti.stop()
   updateScoreUI()
 
   awardsText.innerText = 'READY'
@@ -706,4 +716,104 @@ function onWindowResize() {
   camera.position.z = zPos
 
   renderer.setSize(window.innerWidth, window.innerHeight)
+
+  // Resize confetti canvas
+  const canvas = document.getElementById('confetti-canvas')
+  if (canvas) {
+    canvas.width = window.innerWidth
+    canvas.height = window.innerHeight
+  }
 }
+
+// --- Confetti System ---
+class ConfettiSystem {
+  constructor() {
+    this.canvas = document.getElementById('confetti-canvas')
+    this.ctx = this.canvas.getContext('2d')
+    this.particles = []
+    this.isRunning = false
+    this.isContinuous = false
+    this.resize()
+  }
+
+  resize() {
+    this.canvas.width = window.innerWidth
+    this.canvas.height = window.innerHeight
+  }
+
+  start() {
+    this.isContinuous = false
+    this.particles = []
+    this.isRunning = true
+    // Create particles
+    for (let i = 0; i < 150; i++) {
+      this.particles.push(this.createParticle())
+    }
+    this.animate()
+  }
+
+  startContinuous() {
+    this.isContinuous = true
+    this.isRunning = true
+    if (this.particles.length === 0) this.animate()
+  }
+
+  stop() {
+    this.isContinuous = false
+  }
+
+  createParticle(yOverride) {
+    const colors = ['#EAA14D', '#E05A47', '#4D9BEA', '#5FB376', '#D869A8', '#F2C94C', '#9B51E0', '#FFFFFF']
+    return {
+      x: Math.random() * this.canvas.width,
+      y: yOverride !== undefined ? yOverride : Math.random() * this.canvas.height - this.canvas.height,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      size: Math.random() * 10 + 5,
+      speedY: Math.random() * 3 + 2,
+      speedX: Math.random() * 2 - 1,
+      rotation: Math.random() * 360,
+      rotationSpeed: Math.random() * 10 - 5,
+    }
+  }
+
+  animate() {
+    if (!this.isRunning) {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+      return
+    }
+
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height)
+
+    // 持續產生新粒子
+    if (this.isContinuous && this.particles.length < 150) {
+      for (let i = 0; i < 2; i++) {
+        this.particles.push(this.createParticle(-20))
+      }
+    }
+
+    // 移除超出畫面的粒子
+    this.particles = this.particles.filter((p) => p.y < this.canvas.height + 20)
+
+    this.particles.forEach((p) => {
+      p.y += p.speedY
+      p.x += p.speedX
+      p.rotation += p.rotationSpeed
+
+      this.ctx.save()
+      this.ctx.translate(p.x, p.y)
+      this.ctx.rotate((p.rotation * Math.PI) / 180)
+      this.ctx.fillStyle = p.color
+      this.ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size / 2) // Ribbon shape
+      this.ctx.restore()
+    })
+
+    if (this.particles.length === 0 && !this.isContinuous) {
+      this.isRunning = false
+    } else {
+      requestAnimationFrame(() => this.animate())
+    }
+  }
+}
+
+const confetti = new ConfettiSystem()
+window.addEventListener('resize', () => confetti.resize())
