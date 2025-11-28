@@ -10,29 +10,39 @@ const REEL_SPACING = 12
 // 顏色設定
 const COLORS = {
   background: '#F6F3EB',
-  outline: '#725349',
+  outline: '#a78276',
   symbols: ['#4D9BEA', '#F2C94C', '#E05A47', '#5FB376', '#95A5A6', '#9B51E0', '#C0392B', '#2980B9'],
 }
 
 // 符號定義
 const SYMBOL_DATA = [
-  { id: 0, nameCN: '藍球', path: './assets/symbol_0.png' },
-  { id: 1, nameCN: '鈴鐺', path: './assets/symbol_1.png' },
-  { id: 2, nameCN: '櫻桃', path: './assets/symbol_2.png' },
-  { id: 3, nameCN: '西瓜', path: './assets/symbol_3.png' },
-  { id: 4, nameCN: '方塊', path: './assets/symbol_4.png' },
-  { id: 5, nameCN: '星星', path: './assets/symbol_5.png' },
-  { id: 6, nameCN: '紅七', path: './assets/symbol_6.png' },
-  { id: 7, nameCN: '藍七', path: './assets/symbol_7.png' },
+  { id: 0, nameCN: '藍球', nameEN: 'Blue Ball', value: 3, path: './assets/symbol_0.png' },
+  { id: 1, nameCN: '鈴鐺', nameEN: 'Bell', value: 6, path: './assets/symbol_1.png' },
+  { id: 2, nameCN: '櫻桃', nameEN: 'Cherry', value: 12, path: './assets/symbol_2.png' },
+  { id: 3, nameCN: '西瓜', nameEN: 'Watermelon', value: 9, path: './assets/symbol_3.png' },
+  { id: 4, nameCN: '方塊', nameEN: 'Square', value: 15, path: './assets/symbol_4.png' },
+  { id: 5, nameCN: '紅七', nameEN: 'Red 7', value: 30, path: './assets/symbol_6.png' },
+  { id: 6, nameCN: '藍七', nameEN: 'Blue 7', value: 60, path: './assets/symbol_7.png' },
 ]
 
-// 機率權重
-const SYMBOL_WEIGHTS = [50, 35, 25, 15, 10, 5, 3, 1]
+// 機率權重 (一般模式) - 調整權重
+const SYMBOL_WEIGHTS = [50, 35, 25, 15, 10, 3, 1]
+// 機率權重 (Bonus模式) - 提高高分符號機率
+const BONUS_WEIGHTS = [10, 30, 30, 30, 30, 15, 10]
 
 // 遊戲狀態
-let spinsSinceLastWin = 0
-let targetSpinsForWin = getRandomInt(2, 5)
-let globalSpins = 0
+let score = 50
+let spinCount = 0
+let spinsSinceLastBonusCheck = 0
+let nextBonusCheck = getRandomInt(15, 30)
+let bonusModeActive = false
+let bonusSpinsLeft = 0
+let bonusPending = false // 標記是否即將進入 Bonus (等待提示連線結束)
+
+// 小獎保底機制
+let spinsSinceLastSmallWin = 0
+let targetSpinsForSmallWin = getRandomInt(2, 5)
+
 let nextReelData = []
 
 const ANGLE_PER_SEGMENT = (Math.PI * 2) / REEL_SEGMENTS
@@ -44,7 +54,12 @@ let isSpinning = false
 
 // UI
 const statusText = document.getElementById('status-text')
+const awardsText = document.getElementById('awards-text')
 const btnSpin = document.getElementById('btn-spin')
+const scoreValue = document.getElementById('score-value')
+const spinCountValue = document.getElementById('spin-count-value')
+const btnReset = document.getElementById('btn-reset')
+
 const stopBtns = [
   document.getElementById('btn-stop-0'),
   document.getElementById('btn-stop-1'),
@@ -60,7 +75,11 @@ function init() {
 
   const aspect = window.innerWidth / window.innerHeight
   camera = new THREE.PerspectiveCamera(35, aspect, 1, 1000)
-  camera.position.set(0, 0, 85)
+
+  // 根據螢幕比例調整相機距離 (手機直向時拉遠)
+  const zPos = aspect < 1 ? 130 : 85
+  camera.position.set(0, 0, zPos)
+
   camera.lookAt(0, 0, 0)
 
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true })
@@ -70,7 +89,9 @@ function init() {
   document.body.appendChild(renderer.domElement)
 
   btnSpin.disabled = true
-  statusText.innerText = 'LOADING...'
+  awardsText.innerText = 'READY'
+  statusText.innerText = '準備'
+  updateScoreUI()
 
   loadTexturesAndStart()
 
@@ -92,7 +113,7 @@ function loadTexturesAndStart() {
 
   manager.onLoad = () => {
     console.log('All textures loaded')
-    statusText.innerText = 'READY'
+    statusText.innerText = '準備'
     btnSpin.disabled = false
     createReels()
   }
@@ -171,13 +192,14 @@ function createReels() {
 }
 
 function getWeightedRandomSymbol() {
-  const totalWeight = SYMBOL_WEIGHTS.reduce((a, b) => a + b, 0)
+  const weights = bonusModeActive ? BONUS_WEIGHTS : SYMBOL_WEIGHTS
+  const totalWeight = weights.reduce((a, b) => a + b, 0)
   let random = Math.random() * totalWeight
-  for (let i = 0; i < SYMBOL_WEIGHTS.length; i++) {
-    if (random < SYMBOL_WEIGHTS[i]) {
+  for (let i = 0; i < weights.length; i++) {
+    if (random < weights[i]) {
       return i
     }
-    random -= SYMBOL_WEIGHTS[i]
+    random -= weights[i]
   }
   return 0
 }
@@ -187,22 +209,73 @@ function getRandomInt(min, max) {
 }
 
 function prepareSpinResult() {
-  spinsSinceLastWin++
-  globalSpins++
-  console.log(`Spin: ${globalSpins}, Next force win: ${targetSpinsForWin - spinsSinceLastWin}`)
-
   let isForceWin = false
   let forceSymbolId = -1
 
-  if (globalSpins >= 30) {
+  // Bonus 模式邏輯
+  if (bonusModeActive) {
+    bonusSpinsLeft--
+    console.log(`Bonus Mode Active! Spins left: ${bonusSpinsLeft}`)
+
+    // Bonus 期間保底鈴鐺(1)以上連線，且每局必中
     isForceWin = true
-    forceSymbolId = Math.random() > 0.5 ? 6 : 7 // 紅7或藍7
-    globalSpins = 0
-    spinsSinceLastWin = 0
-    targetSpinsForWin = getRandomInt(2, 5)
-  } else if (spinsSinceLastWin >= targetSpinsForWin) {
+    // 隨機選擇 1(鈴鐺) ~ 6(藍七)
+    forceSymbolId = getRandomInt(1, 6)
+
+    if (bonusSpinsLeft <= 0) {
+      bonusModeActive = false
+      spinsSinceLastBonusCheck = 0
+      nextBonusCheck = getRandomInt(30, 50)
+      console.log('Bonus Mode Ended')
+    }
+  } else if (bonusPending) {
+    // 已經確定要進入 Bonus，這一局強制出 7 連線，然後開啟 Bonus 模式
+    console.log('Bonus Pending -> Triggering 7s Win')
+    bonusModeActive = true
+    bonusSpinsLeft = 20
+    bonusPending = false
     isForceWin = true
-    forceSymbolId = -1
+    forceSymbolId = Math.random() > 0.5 ? 5 : 6 // 紅7(5) 或 藍7(6)
+  } else {
+    spinsSinceLastBonusCheck++
+    spinsSinceLastSmallWin++
+    console.log(`Spins since last check: ${spinsSinceLastBonusCheck}/${nextBonusCheck}`)
+
+    // 檢查是否到達 Bonus 檢查點
+    if (spinsSinceLastBonusCheck >= nextBonusCheck) {
+      // 決定提示符號與機率
+      // 隨機選擇提示符號：西瓜(3)、櫻桃(2)、方塊(4)
+      const hintOptions = [
+        { id: 3, prob: 0.4 }, // 西瓜 40%
+        { id: 2, prob: 0.6 }, // 櫻桃 60%
+        { id: 4, prob: 0.8 }, // 方塊 80%
+      ]
+      const hint = hintOptions[Math.floor(Math.random() * hintOptions.length)]
+
+      console.log(`Bonus Check! Hint Symbol: ${hint.id}, Prob: ${hint.prob}`)
+
+      // 強制出提示連線
+      isForceWin = true
+      forceSymbolId = hint.id
+
+      // 判定是否進入 Bonus
+      if (Math.random() < hint.prob) {
+        console.log('Bonus Triggered! (Pending next spin)')
+        bonusPending = true
+      } else {
+        console.log('Bonus Missed, resetting check')
+        spinsSinceLastBonusCheck = 0
+        nextBonusCheck = getRandomInt(30, 50)
+      }
+    }
+    // 檢查小獎保底 (如果沒有觸發 Bonus 檢查)
+    else if (spinsSinceLastSmallWin >= targetSpinsForSmallWin) {
+      console.log('Small Win Triggered')
+      isForceWin = true
+      forceSymbolId = Math.random() > 0.5 ? 0 : 1 // 藍球(0) 或 鈴鐺(1)
+      spinsSinceLastSmallWin = 0
+      targetSpinsForSmallWin = getRandomInt(2, 5)
+    }
   }
 
   nextReelData = [
@@ -212,15 +285,15 @@ function prepareSpinResult() {
   ]
 
   if (isForceWin) {
-    const winningSymbolId = forceSymbolId !== -1 ? forceSymbolId : getWeightedRandomSymbol()
-    // 0~7 代表 8 種連線 (橫3 + 垂3 + 斜2)
-    const lineType = getRandomInt(0, 7)
+    const winningSymbolId = forceSymbolId
+    // 0~4 代表 5 種連線 (橫3 + 斜2) - 排除垂直連線
+    const lineType = getRandomInt(0, 4)
 
     // 填雜訊
     for (let i = 0; i < 3; i++) {
-      nextReelData[i].top = getRandomInt(0, 7)
-      nextReelData[i].center = getRandomInt(0, 7)
-      nextReelData[i].bottom = getRandomInt(0, 7)
+      nextReelData[i].top = getWeightedRandomSymbol()
+      nextReelData[i].center = getWeightedRandomSymbol()
+      nextReelData[i].bottom = getWeightedRandomSymbol()
     }
 
     // 填入必中路徑
@@ -249,21 +322,6 @@ function prepareSpinResult() {
       nextReelData[0].bottom = winningSymbolId
       nextReelData[1].center = winningSymbolId
       nextReelData[2].top = winningSymbolId
-    } else if (lineType === 5) {
-      // 左垂直
-      nextReelData[0].top = winningSymbolId
-      nextReelData[0].center = winningSymbolId
-      nextReelData[0].bottom = winningSymbolId
-    } else if (lineType === 6) {
-      // 中垂直
-      nextReelData[1].top = winningSymbolId
-      nextReelData[1].center = winningSymbolId
-      nextReelData[1].bottom = winningSymbolId
-    } else if (lineType === 7) {
-      // 右垂直
-      nextReelData[2].top = winningSymbolId
-      nextReelData[2].center = winningSymbolId
-      nextReelData[2].bottom = winningSymbolId
     }
   } else {
     for (let i = 0; i < 3; i++) {
@@ -272,13 +330,41 @@ function prepareSpinResult() {
       nextReelData[i].bottom = getWeightedRandomSymbol()
     }
   }
+
+  // 檢查並修正垂直連線 (避免三個相同)
+  for (let i = 0; i < 3; i++) {
+    const col = nextReelData[i]
+    // 如果三個都一樣，強制改變中間那個
+    if (col.top === col.center && col.center === col.bottom) {
+      let newSymbol = col.center
+      while (newSymbol === col.center) {
+        newSymbol = getWeightedRandomSymbol()
+      }
+      col.center = newSymbol
+    }
+  }
 }
 
 function startSpin() {
   if (isSpinning) return
+
+  // 扣除分數
+  score -= 3
+  spinCount++
+  updateScoreUI()
+
   isSpinning = true
-  statusText.innerText = '機器轉動中...'
-  statusText.style.color = '#725349'
+  statusText.innerText = '機器轉動中'
+  statusText.style.color = '#a78276'
+
+  if (bonusModeActive) {
+    awardsText.style.color = '#E05A47'
+    awardsText.innerText = 'BONUS'
+  } else {
+    awardsText.style.color = '#725349'
+    awardsText.innerText = 'SPINNING'
+  }
+
   btnSpin.disabled = true
   btnSpin.style.opacity = 0.5
 
@@ -329,7 +415,7 @@ function stopReel(index) {
   setTileSymbol(reel.tiles[bottomTileIdx], data.bottom)
 }
 
-// --- 修正：加入垂直連線判斷 ---
+// --- 修正：移除垂直連線判斷，計算分數 ---
 function checkResult() {
   const board = reels.map((reel) => [reel.results.top, reel.results.center, reel.results.bottom])
   const lines = [
@@ -373,34 +459,11 @@ function checkResult() {
         [2, 0],
       ],
     },
-    // 新增垂直連線
-    {
-      name: '左垂直線',
-      path: [
-        [0, 0],
-        [0, 1],
-        [0, 2],
-      ],
-    },
-    {
-      name: '中垂直線',
-      path: [
-        [1, 0],
-        [1, 1],
-        [1, 2],
-      ],
-    },
-    {
-      name: '右垂直線',
-      path: [
-        [2, 0],
-        [2, 1],
-        [2, 2],
-      ],
-    },
   ]
 
   let winLines = []
+  let totalWinScore = 0
+
   lines.forEach((line) => {
     const p = line.path
     const s1 = board[p[0][0]][p[0][1]]
@@ -408,27 +471,57 @@ function checkResult() {
     const s3 = board[p[2][0]][p[2][1]]
     if (s1 === s2 && s2 === s3) {
       winLines.push({ name: line.name, symbolId: s1 })
+      totalWinScore += SYMBOL_DATA[s1].value
     }
   })
 
   if (winLines.length > 0) {
-    const firstWin = winLines[0]
-    const symbolName = SYMBOL_DATA[firstWin.symbolId].nameCN
-    statusText.style.color = '#E05A47'
+    score += totalWinScore
+    updateScoreUI()
 
-    if (winLines.length > 1) {
-      statusText.innerText = `連 ${winLines.length} 條線! （${symbolName}）`
+    const firstWin = winLines[0]
+    const symbolData = SYMBOL_DATA[firstWin.symbolId]
+
+    // 如果是藍球(id=0)
+    if (firstWin.symbolId === 0) {
+      statusText.style.color = '#725349'
+      const noWinMessages = ['再玩一次～', '繼續努力～', '別放棄～', '加油加油～', '再接再厲～', '再一次吧～']
+      statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
     } else {
-      statusText.innerText = `有連線！（${symbolName}）`
+      statusText.style.color = '#E05A47'
+      const noWinMessages = [
+        '恭喜中獎！',
+        '太棒了！',
+        '太爽了吧！',
+        '怎麼那麼厲害！',
+        '好運連連！',
+        '中獎了！',
+        '中獎真幸運！',
+      ]
+      statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
     }
 
-    spinsSinceLastWin = 0
-    targetSpinsForWin = getRandomInt(2, 5)
+    // Awards Text 顯示英文獎項
+    // 如果是 Bonus 模式且不是剛觸發的那一局 (剛觸發時 bonusSpinsLeft 為 20)，顯示 BONUS
+    if (bonusModeActive && bonusSpinsLeft < 20) {
+      awardsText.style.color = '#E05A47'
+      awardsText.innerText = 'BONUS'
+    } else {
+      awardsText.style.color = '#725349'
+      awardsText.innerText = symbolData.nameEN.toUpperCase()
+    }
   } else {
     const noWinMessages = ['再接再厲', '可惜沒中喔', '下次一定中', '差一點點', '繼續加油']
     statusText.innerText = noWinMessages[Math.floor(Math.random() * noWinMessages.length)]
+    statusText.style.color = '#a78276'
 
-    statusText.style.color = '#725349'
+    if (bonusModeActive) {
+      awardsText.style.color = '#E05A47'
+      awardsText.innerText = 'BONUS'
+    } else {
+      awardsText.style.color = '#725349'
+      awardsText.innerText = 'TRY AGAIN'
+    }
   }
 
   isSpinning = false
@@ -439,6 +532,31 @@ function checkResult() {
   stopBtns.forEach((btn) => {
     btn.disabled = false
   })
+}
+
+function updateScoreUI() {
+  scoreValue.innerText = score
+  spinCountValue.innerText = spinCount
+}
+
+function resetGame() {
+  score = 50
+  spinCount = 0
+  spinsSinceLastBonusCheck = 0
+  nextBonusCheck = getRandomInt(30, 50)
+  bonusModeActive = false
+  bonusSpinsLeft = 0
+  bonusPending = false
+  spinsSinceLastSmallWin = 0
+  targetSpinsForSmallWin = getRandomInt(2, 5)
+
+  updateScoreUI()
+
+  awardsText.innerText = 'READY'
+  awardsText.style.color = '#725349'
+
+  statusText.innerText = '準備'
+  statusText.style.color = '#a78276'
 }
 
 function animate() {
@@ -499,7 +617,14 @@ function setupUI() {
     })
   })
 
-  // 3. 鍵盤控制 (空白鍵 or Enter)
+  // 3. RESET 按鈕
+  btnReset.addEventListener('click', () => {
+    if (!isSpinning) {
+      resetGame()
+    }
+  })
+
+  // 4. 鍵盤控制 (空白鍵 or Enter)
   document.addEventListener('keydown', (e) => {
     if (e.code === 'Space' || e.code === 'Enter') {
       // 防止捲動頁面
@@ -527,5 +652,10 @@ function onWindowResize() {
   const aspect = window.innerWidth / window.innerHeight
   camera.aspect = aspect
   camera.updateProjectionMatrix()
+
+  // 根據螢幕比例調整相機距離
+  const zPos = aspect < 1 ? 130 : 85
+  camera.position.z = zPos
+
   renderer.setSize(window.innerWidth, window.innerHeight)
 }
