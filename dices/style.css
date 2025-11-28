@@ -125,7 +125,7 @@ body {
   border: 5px solid #725349;
   font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 0 #72534935;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -159,7 +159,7 @@ body {
   display: flex;
   align-items: center;
   padding: 0 5px;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 0 #72534935;
   overflow: hidden;
 }
 

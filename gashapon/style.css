@@ -114,7 +114,7 @@ body {
   color: #725349;
   font-size: 16px;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 0 #72534935;
   display: flex;
   align-items: center;
   justify-content: center;
