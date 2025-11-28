@@ -104,13 +104,14 @@ body {
   max-width: 100px;
   height: 60px;
   background: #e05a47;
-  border: 5px solid #725349;
+  border: 7px solid #725349;
   border-radius: 20px;
   color: white;
   font-size: 18px;
   cursor: pointer;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 0 #72534935;
   transition: transform 0.1s, background 0.2s;
+  font-family: "Bungee", serif;
 }
 
 .stop-btn:active {
@@ -175,37 +176,34 @@ body {
 }
 
 .score-board {
-  background: rgba(255, 255, 255, 0.9);
-  border: 4px solid #725349;
-  border-radius: 16px;
-  padding: 10px 20px;
-  text-align: center;
-  box-shadow: 0 4px 0 rgba(0, 0, 0, 0.1);
-}
+  padding: 12px 20px;
+  text-align: right;
 
-.score-label {
-  font-size: 14px;
-  color: #a78276;
-  margin-bottom: 4px;
-}
+  #score-value {
+    font-family: "Bungee", serif;
+    font-size: 48px;
+    color: #725349; /* 改為棕色 */
+    line-height: 1;
+    text-shadow: 2px 2px 0 #f6f3eb;
+    transition: color 0.2s;
+    display: inline-block;
+  }
 
-#score-value {
-  font-family: "Bungee", serif;
-  font-size: 32px;
-  color: #725349; /* 改為棕色 */
-  line-height: 1;
-  text-shadow: 2px 2px 0 #f6f3eb;
-  transition: color 0.2s;
-}
+  .score-update {
+    animation: score-pulse 0.3s ease-in-out;
+    color: #e05a47 !important; /* 閃爍紅色 */
+  }
 
-.score-update {
-  animation: score-pulse 0.3s ease-in-out;
-  color: #e05a47 !important; /* 閃爍紅色 */
-}
+  .score-deduct {
+    animation: score-pulse 0.3s ease-in-out;
+    color: #a78276 !important; /* 閃爍淺棕色 */
+  }
 
-.score-deduct {
-  animation: score-pulse 0.3s ease-in-out;
-  color: #a78276 !important; /* 閃爍淺棕色 */
+  #spin-count-value {
+    font-family: "Bungee", serif;
+    font-size: 28px;
+    color: #a78276;
+  }
 }
 
 @keyframes score-pulse {
@@ -218,12 +216,6 @@ body {
   100% {
     transform: scale(1);
   }
-}
-
-.spin-count {
-  font-size: 12px;
-  color: #a78276;
-  margin-top: 4px;
 }
 
 /* 左下角控制區 (RESET) */
