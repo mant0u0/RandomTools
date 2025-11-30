@@ -65,15 +65,22 @@ const SYMBOL_DATA = [
     nameCN: "紅七",
     nameEN: "Red 7",
     value: 30,
-    path: "./assets/symbol_6.png",
+    path: "./assets/symbol_5.png",
   },
   {
     id: 6,
     nameCN: "藍七",
     nameEN: "Blue 7",
     value: 60,
-    path: "./assets/symbol_7.png",
+    path: "./assets/symbol_6.png",
   },
+  // {
+  //   id: 7,
+  //   nameCN: "饅頭",
+  //   nameEN: "Mant0u",
+  //   value: 100,
+  //   path: "./assets/symbol_8.png",
+  // },
 ];
 
 // 機率權重 (一般模式) - 調整權重 (降低高分符號機率)
