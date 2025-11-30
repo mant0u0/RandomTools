@@ -5,6 +5,7 @@ import * as CANNON from "https://esm.sh/cannon-es";
 let scene, camera, renderer, world;
 let balls = [];
 let gameItems = []; // Array of { id, text, color, drawn }
+let isMixing = false; // New state for mixing
 
 // Settings
 let settingMinVal = 1;
@@ -15,11 +16,11 @@ let settingIsReplace = false;
 const palette = [
   "#EAA14D",
   "#F2C94C",
-  // "#E05A47",
-  // "#4D9BEA",
-  // "#5FB376",
-  // "#D869A8",
-  // "#9B51E0",
+  "#E05A47",
+  "#4D9BEA",
+  "#5FB376",
+  "#D869A8",
+  "#9B51E0",
 ];
 
 const styles = {
@@ -94,11 +95,6 @@ function init() {
   createPhysicsWalls(defaultMat);
 
   // Load Font & Start Game
-  // We don't need to explicitly load the font for Canvas API,
-  // but we should ensure it's ready. Since it's a Google Font,
-  // it might take a moment. We'll just start, and if it's not ready,
-  // the first texture might fallback. But usually it's fine.
-  // Ideally document.fonts.ready could be used.
   document.fonts.ready.then(() => {
     parseAndReloadGame(defaultMat);
   });
@@ -141,11 +137,16 @@ function parseAndReloadGame(material) {
     });
   }
 
-  // Shuffle for initial position randomness (though physics will randomize them too)
+  // Shuffle for initial position randomness
   shuffleArray(gameItems);
 
   spawnBalls(material);
   checkEmptyState();
+
+  // Reset mixing state
+  isMixing = false;
+  btnShuffle.innerText = "啟動";
+  btnShuffle.classList.remove("active");
 }
 
 function spawnBalls(material) {
@@ -153,7 +154,13 @@ function spawnBalls(material) {
   balls.forEach((obj) => removeVisualsAndBody(obj));
   balls = [];
 
-  const radius = 2.2;
+  // Dynamic radius based on count to prevent overcrowding
+  // Base radius 2.2, min radius 1.5
+  const count = gameItems.filter((i) => !i.drawn).length;
+  let radius = 2.2;
+  if (count > 30) radius = 1.8;
+  if (count > 50) radius = 1.5;
+
   const geometry = new THREE.SphereGeometry(radius, 32, 32);
   const outlineScale = window.innerWidth < window.innerHeight ? 1.1 : 1.07;
   const outlineGeo = new THREE.SphereGeometry(radius * outlineScale, 32, 32);
@@ -317,26 +324,30 @@ function setupUIEvents(material) {
     uiResetModal.classList.remove("show");
   });
 
-  // Shuffle
+  // Shuffle / Start Mixing
+  btnShuffle.innerText = "啟動"; // Default text
   btnShuffle.addEventListener("click", () => {
-    balls.forEach((obj) => {
-      if (obj.isShrinking) return;
-      obj.body.wakeUp();
-      obj.body.velocity.set(
-        (Math.random() - 0.5) * 60,
-        40 + Math.random() * 20,
-        (Math.random() - 0.5) * 60
-      );
-      obj.body.angularVelocity.set(
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20,
-        (Math.random() - 0.5) * 20
-      );
-    });
+    isMixing = !isMixing;
+    if (isMixing) {
+      btnShuffle.innerText = "停止";
+      btnShuffle.classList.add("active");
+      // Wake up all balls
+      balls.forEach((b) => b.body.wakeUp());
+    } else {
+      btnShuffle.innerText = "啟動";
+      btnShuffle.classList.remove("active");
+    }
   });
 
   // Pick / Draw
   btnRandomPick.addEventListener("click", () => {
+    // Stop mixing if active
+    if (isMixing) {
+      isMixing = false;
+      btnShuffle.innerText = "啟動";
+      btnShuffle.classList.remove("active");
+    }
+
     const activeBalls = balls.filter((b) => !b.isShrinking);
     if (activeBalls.length === 0) return;
 
@@ -444,6 +455,16 @@ function createPhysicsWalls(material) {
   floorBody.quaternion.setFromAxisAngle(new CANNON.Vec3(1, 0, 0), -Math.PI / 2);
   world.addBody(floorBody);
 
+  // Ceiling (to keep balls in during mixing)
+  const ceilingBody = new CANNON.Body({ mass: 0, material: material });
+  ceilingBody.addShape(new CANNON.Plane());
+  ceilingBody.position.set(0, 40, 0); // Height 40
+  ceilingBody.quaternion.setFromAxisAngle(
+    new CANNON.Vec3(1, 0, 0),
+    Math.PI / 2
+  );
+  world.addBody(ceilingBody);
+
   const wallDistance = 14;
   const createWall = (x, z, rot) => {
     const body = new CANNON.Body({ mass: 0, material: material });
@@ -459,8 +480,28 @@ function createPhysicsWalls(material) {
   createWall(0, wallDistance, Math.PI);
 }
 
+function mixBalls() {
+  if (!isMixing) return;
+
+  balls.forEach((obj) => {
+    if (obj.isShrinking) return;
+
+    // Apply random force
+    // Upward bias to keep them flying
+    const force = new CANNON.Vec3(
+      (Math.random() - 0.5) * 3000,
+      Math.random() * 300,
+      (Math.random() - 0.5) * 200
+    );
+    obj.body.applyForce(force, obj.body.position);
+  });
+}
+
 function animate() {
   requestAnimationFrame(animate);
+
+  // Apply mixing forces
+  mixBalls();
 
   // Physics Step
   world.step(1 / 60);
@@ -483,8 +524,8 @@ function animate() {
       continue;
     }
 
-    // Keep balls moving a bit if they stop
-    if (obj.body.velocity.lengthSquared() < 2.0) {
+    // Keep balls moving a bit if they stop (only if not mixing)
+    if (!isMixing && obj.body.velocity.lengthSquared() < 2.0) {
       obj.body.velocity.x += (Math.random() - 0.5) * 1.5;
       obj.body.velocity.y += Math.random() * 0.5;
       obj.body.velocity.z += (Math.random() - 0.5) * 1.5;
