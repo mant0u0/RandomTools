@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>饅頭隨機小工具 - 樂透開獎機 | Mantou Random Tools</title>
+    <meta
+      name="description"
+      content="饅頭隨機小工具集合，提供3D物理效果的樂透開獎機。免費線上使用，適合尾牙、抽獎使用。"
+    />
+    <meta
+      name="keywords"
+      content="隨機工具,3D樂透,樂透機,抽獎工具,線上工具,饅頭工具"
+    />
+
+    <!-- Open Graph -->
+    <meta property="og:title" content="饅頭隨機小工具 - 樂透開獎機" />
+    <meta
+      property="og:description"
+      content="提供3D物理效果的樂透開獎機，自訂號碼範圍與數量"
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Mantou Random Tools" />
+
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css"
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    />
+    <link rel="stylesheet" href="./style.css" />
+  </head>
+
+  <body>
+    <body>
+      <script type="importmap">
+        {
+          "imports": {
+            "three": "https://esm.sh/three@0.160.0",
+            "three/addons/": "https://esm.sh/three@0.160.0/examples/jsm/",
+            "cannon-es": "https://esm.sh/cannon-es@0.20.0"
+          }
+        }
+      </script>
+
+      <!-- 空狀態提示 -->
+      <div id="empty-message">
+        <h2>樂透機已經空了</h2>
+        <p>點擊設定按鈕來重新開始</p>
+      </div>
+
+      <!-- 左上角 返回 -->
+      <div class="top-left-controls">
+        <a class="back-btn" href="../index.html" title="返回"
+          ><i class="fas fa-angle-left"></i>返回</a
+        >
+      </div>
+
+      <!-- 左下角 RESET -->
+      <div class="bottom-left-controls">
+        <button class="circle-btn restart" id="btn-main-restart">重來</button>
+      </div>
+
+      <!-- 右下角 按鈕區 -->
+      <div class="bottom-right-controls">
+        <button class="circle-btn" id="btn-open-settings">設定</button>
+        <button class="circle-btn mix" id="btn-shuffle">搖動</button>
+        <button class="circle-btn pick" id="btn-random-pick">抽獎</button>
+      </div>
+
+      <!-- 設定視窗 -->
+      <div class="modal-overlay" id="settings-modal">
+        <div class="modal-content small">
+          <h3>樂透設定</h3>
+
+          <div class="setting-row">
+            <label>數字範圍</label>
+            <div class="range-inputs">
+              <input type="number" id="setting-min" value="1" min="0" />
+              <span>~</span>
+              <input type="number" id="setting-max" value="49" min="1" />
+            </div>
+          </div>
+
+          <div class="setting-row">
+            <label>一次抽出</label>
+            <input
+              type="number"
+              id="setting-count"
+              value="6"
+              min="1"
+              max="50"
+            />
+          </div>
+
+          <div class="setting-row">
+            <label class="checkbox-wrapper">
+              <input type="checkbox" id="setting-replace" />
+              抽出後放回
+            </label>
+          </div>
+
+          <div class="modal-footer">
+            <button class="action-btn btn-close" id="btn-modal-close">
+              關閉
+            </button>
+            <button class="action-btn btn-restart" id="btn-modal-update">
+              更新
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Reset 確認視窗 -->
+      <div class="modal-overlay" id="reset-modal">
+        <div class="modal-content small">
+          <h3>想要重來嗎？</h3>
+          <div class="modal-footer" style="border: none; padding: 0">
+            <button class="action-btn btn-no" id="btn-reset-cancel">
+              取消
+            </button>
+            <button class="action-btn btn-yes" id="btn-reset-confirm">
+              重來
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 結果視窗 -->
+      <div id="result-overlay">
+        <div id="result-container">
+          <!-- 動態生成的球會放在這裡 -->
+        </div>
+        <button class="close-result-btn" id="btn-close-result">好耶</button>
+      </div>
+    </body>
+    <script type="module" src="./script.js"></script>
+  </body>
+</html>
