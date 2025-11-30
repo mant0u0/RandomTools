@@ -1,8 +1,8 @@
-@import url("https://fonts.googleapis.com/css2?family=Bungee&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Bungee&family=Chiron+GoRound+TC:wght@200..900&display=swap");
 
 * {
   box-sizing: border-box;
-  font-family: "Chiron GoRound TC", "Bungee", sans-serif !important;
+  font-family: "Chiron GoRound TC", sans-serif !important;
   font-weight: 900;
 }
 
@@ -94,14 +94,6 @@ body {
   line-height: 1.4;
 }
 
-.hint {
-  color: #72534999;
-  font-weight: bold;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  font-size: 16px;
-}
-
 /* 響應式設計 */
 @media (max-width: 768px) {
   .main-title h1 {
@@ -152,9 +144,5 @@ body {
 
   .tool-card p {
     font-size: 13px;
-  }
-
-  .hint {
-    font-size: 14px;
   }
 }
